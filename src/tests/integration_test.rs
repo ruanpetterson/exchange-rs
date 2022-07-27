@@ -5,11 +5,9 @@ use crate::engine::{Event, Order, Orderbook, Trade};
 use crate::{Asset, Exchange};
 
 const PAIR: CompactString = CompactString::new_inline("BTC/USDC");
-const MOCK_SIZE: usize = 6;
-const ORDERS: Lazy<[Order; MOCK_SIZE]> = Lazy::new(|| {
+const ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
     let input = include_str!("./mock_orders.json");
-    serde_json::from_str(input)
-        .expect("a set of valid orders with MOCK_SIZE length")
+    serde_json::from_str(input).expect("a set of valid orders")
 });
 
 #[test]
@@ -20,6 +18,34 @@ fn simple_match() {
     assert!(ask.trade(&mut bid).is_some());
     assert!(ask.is_closed());
     assert!(bid.is_closed());
+}
+
+#[test]
+fn partial_match() {
+    let mut ask = ORDERS[3];
+    let mut bid = ORDERS[2];
+
+    assert!(ask.trade(&mut bid).is_some());
+    assert!(!ask.is_closed());
+    assert!(bid.is_closed());
+}
+
+#[test]
+fn taker_advantage_for_ask() {
+    let mut ask = ORDERS[3];
+    let mut bid = ORDERS[2];
+
+    let trade = ask.trade(&mut bid).expect("a sucessful trade");
+    assert_eq!(trade.price, ask.limit_price().max(bid.limit_price()));
+}
+
+#[test]
+fn taker_advantage_for_bid() {
+    let mut bid = ORDERS[2];
+    let mut ask = ORDERS[3];
+
+    let trade = bid.trade(&mut ask).expect("a sucessful trade");
+    assert_eq!(trade.price, ask.limit_price().min(bid.limit_price()));
 }
 
 #[test]
