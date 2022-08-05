@@ -131,12 +131,8 @@ impl Asset for Order {
         #[inline(always)]
         fn matches_with(taker: &Order, maker: &Order) -> bool {
             match (taker.side(), maker.side()) {
-                (OrderSide::Ask, OrderSide::Bid) => {
-                    taker.limit_price() <= maker.limit_price()
-                }
-                (OrderSide::Bid, OrderSide::Ask) => {
-                    taker.limit_price() >= maker.limit_price()
-                }
+                (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
+                (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
                 _ => false,
             }
         }
@@ -149,10 +145,11 @@ impl Asset for Order {
             );
 
             order.filled += exchanged;
-
-            if order.filled == order.amount {
-                order.status = OrderStatus::Completed;
-            }
+            order.status = if order.filled == order.amount {
+                OrderStatus::Completed
+            } else {
+                OrderStatus::Partial
+            };
         }
 
         matches_with(taker, maker).then(|| {
@@ -263,96 +260,82 @@ impl DerefMut for BidOrder {
     }
 }
 
-impl Asset<BidOrder> for AskOrder {
-    type OrderId = OrderId;
-    type OrderStatus = OrderStatus;
-    type OrderSide = OrderSide;
-    type Trade = Trade;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    #[inline]
-    fn id(&self) -> Self::OrderId {
-        self.deref().id()
+    #[test]
+    fn try_into_ask() {
+        let ask_orders = [OrderSide::Ask, OrderSide::Bid]
+            .into_iter()
+            .enumerate()
+            .filter_map(|(id, side)| {
+                Order::new(OrderId::new(id as u64), 1, side, 100, 100)
+                    .try_into()
+                    .ok()
+            })
+            .collect::<Vec<AskOrder>>();
+        assert_eq!(ask_orders.len(), 1);
+
+        let orders = ask_orders
+            .into_iter()
+            .map(|order| order.into())
+            .collect::<Vec<Order>>();
+        assert_eq!(orders.len(), 1);
     }
 
-    #[inline]
-    fn side(&self) -> Self::OrderSide {
-        self.deref().side()
+    #[test]
+    fn try_into_bid() {
+        let bid_orders = [OrderSide::Ask, OrderSide::Bid]
+            .into_iter()
+            .enumerate()
+            .filter_map(|(id, side)| {
+                Order::new(OrderId::new(id as u64), 1, side, 100, 100)
+                    .try_into()
+                    .ok()
+            })
+            .collect::<Vec<BidOrder>>();
+        assert_eq!(bid_orders.len(), 1);
+
+        let orders = bid_orders
+            .into_iter()
+            .map(|order| order.into())
+            .collect::<Vec<Order>>();
+        assert_eq!(orders.len(), 1);
     }
 
-    #[inline]
-    fn limit_price(&self) -> u64 {
-        self.deref().limit_price()
+    #[test]
+    fn valid_trade() {
+        let mut ask = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+        let mut bid = Order::new(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+
+        assert!(ask.trade(&mut bid).is_some());
     }
 
-    #[inline]
-    fn remaining(&self) -> u64 {
-        self.deref().remaining()
+    #[test]
+    fn invalid_trade() {
+        let mut ask_1 = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+        let mut ask_2 = Order::new(OrderId::new(2), 1, OrderSide::Ask, 10, 10);
+
+        assert!(ask_1.trade(&mut ask_2).is_none());
     }
 
-    #[inline]
-    fn status(&self) -> Self::OrderStatus {
-        self.deref().status()
+    #[test]
+    fn cancel_order() {
+        let mut ask = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+        ask.cancel();
+        assert_eq!(ask.status(), OrderStatus::Cancelled);
     }
 
-    #[inline]
-    fn is_closed(&self) -> bool {
-        self.deref().is_closed()
-    }
+    #[test]
+    fn close_order() {
+        let mut ask = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+        let mut bid = Order::new(OrderId::new(2), 1, OrderSide::Bid, 10, 5);
 
-    #[inline]
-    fn trade(&mut self, order: &mut BidOrder) -> Option<Self::Trade> {
-        self.deref_mut().trade(order)
-    }
+        assert!(ask.trade(&mut bid).is_some());
 
-    #[inline]
-    fn cancel(&mut self) {
-        self.deref_mut().cancel()
-    }
-}
+        ask.cancel();
 
-impl Asset<AskOrder> for BidOrder {
-    type OrderId = OrderId;
-    type OrderStatus = OrderStatus;
-    type OrderSide = OrderSide;
-    type Trade = Trade;
-
-    #[inline]
-    fn id(&self) -> Self::OrderId {
-        self.deref().id()
-    }
-
-    #[inline]
-    fn side(&self) -> Self::OrderSide {
-        self.deref().side()
-    }
-
-    #[inline]
-    fn limit_price(&self) -> u64 {
-        self.deref().limit_price()
-    }
-
-    #[inline]
-    fn remaining(&self) -> u64 {
-        self.deref().remaining()
-    }
-
-    #[inline]
-    fn status(&self) -> Self::OrderStatus {
-        self.deref().status()
-    }
-
-    #[inline]
-    fn is_closed(&self) -> bool {
-        self.deref().is_closed()
-    }
-
-    #[inline]
-    fn trade(&mut self, order: &mut AskOrder) -> Option<Self::Trade> {
-        self.deref_mut().trade(order)
-    }
-
-    #[inline]
-    fn cancel(&mut self) {
-        self.deref_mut().cancel()
+        assert_eq!(ask.status(), OrderStatus::Closed);
     }
 }
