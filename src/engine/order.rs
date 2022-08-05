@@ -131,12 +131,8 @@ impl Asset for Order {
         #[inline(always)]
         fn matches_with(taker: &Order, maker: &Order) -> bool {
             match (taker.side(), maker.side()) {
-                (OrderSide::Ask, OrderSide::Bid) => {
-                    taker.limit_price() <= maker.limit_price()
-                }
-                (OrderSide::Bid, OrderSide::Ask) => {
-                    taker.limit_price() >= maker.limit_price()
-                }
+                (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
+                (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
                 _ => false,
             }
         }
@@ -149,10 +145,11 @@ impl Asset for Order {
             );
 
             order.filled += exchanged;
-
-            if order.filled == order.amount {
-                order.status = OrderStatus::Completed;
-            }
+            order.status = if order.filled == order.amount {
+                OrderStatus::Completed
+            } else {
+                OrderStatus::Partial
+            };
         }
 
         matches_with(taker, maker).then(|| {
