@@ -132,10 +132,10 @@ impl Asset for Order {
         fn matches_with(taker: &Order, maker: &Order) -> bool {
             (!taker.is_closed() && !maker.is_closed())
                 && match (taker.side(), maker.side()) {
-                (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
-                (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
-                _ => false,
-            }
+                    (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
+                    (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
+                    _ => false,
+                }
         }
 
         #[inline(always)]
@@ -308,7 +308,7 @@ mod tests {
     mod valid_trades {
         use super::*;
 
-    #[test]
+        #[test]
         fn same_prices() {
             let mut ask =
                 Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
@@ -345,23 +345,23 @@ mod tests {
                 Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
             let mut bid = Order::new(OrderId::new(2), 1, OrderSide::Bid, 20, 5);
 
-        assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.trade(&mut bid).is_some());
             assert!(!ask.is_closed());
             assert!(bid.is_closed());
-    }
+        }
     }
 
     mod invalid_trades {
         use super::*;
 
-    #[test]
+        #[test]
         fn same_side() {
             let mut ask_1 =
                 Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
             let mut ask_2 =
                 Order::new(OrderId::new(2), 1, OrderSide::Ask, 10, 10);
 
-        assert!(ask_1.trade(&mut ask_2).is_none());
+            assert!(ask_1.trade(&mut ask_2).is_none());
         }
 
         #[test]
