@@ -36,13 +36,14 @@ impl TryFrom<OrderRequest> for Order {
     fn try_from(order_request: OrderRequest) -> Result<Self, Self::Error> {
         match order_request {
             OrderRequest::Create {
+                order_id,
                 account_id,
                 amount,
                 limit_price,
                 side,
                 ..
             } => Ok(Order::new(
-                OrderId::new(account_id.parse::<u64>().unwrap()),
+                OrderId::new(order_id.parse::<u64>().unwrap()),
                 account_id.parse::<u64>().unwrap(),
                 side,
                 limit_price.trunc().to_u64().unwrap() * 100
