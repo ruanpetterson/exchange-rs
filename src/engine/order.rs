@@ -130,7 +130,8 @@ impl Asset for Order {
 
         #[inline(always)]
         fn matches_with(taker: &Order, maker: &Order) -> bool {
-            match (taker.side(), maker.side()) {
+            (!taker.is_closed() && !maker.is_closed())
+                && match (taker.side(), maker.side()) {
                 (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
                 (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
                 _ => false,
@@ -196,7 +197,7 @@ impl TryFrom<Order> for AskOrder {
         order
             .side()
             .eq(&OrderSide::Ask)
-            .then(|| Self(order))
+            .then_some(Self(order))
             .ok_or(OrderError::MismatchSide)
     }
 }
@@ -209,7 +210,7 @@ impl TryFrom<Order> for BidOrder {
         order
             .side()
             .eq(&OrderSide::Bid)
-            .then(|| Self(order))
+            .then_some(Self(order))
             .ok_or(OrderError::MismatchSide)
     }
 }
@@ -304,20 +305,74 @@ mod tests {
         assert_eq!(orders.len(), 1);
     }
 
+    mod valid_trades {
+        use super::*;
+
     #[test]
-    fn valid_trade() {
-        let mut ask = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
-        let mut bid = Order::new(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+        fn same_prices() {
+            let mut ask =
+                Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+            let mut bid =
+                Order::new(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+
+            assert!(ask.trade(&mut bid).is_some());
+        }
+
+        #[test]
+        fn different_prices() {
+            let mut ask =
+                Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+            let mut bid =
+                Order::new(OrderId::new(2), 1, OrderSide::Bid, 20, 10);
+
+            assert!(ask.trade(&mut bid).is_some());
+        }
+
+        #[test]
+        fn partial_maker() {
+            let mut ask = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 5);
+            let mut bid =
+                Order::new(OrderId::new(2), 1, OrderSide::Bid, 20, 10);
+
+            assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.is_closed());
+            assert!(!bid.is_closed());
+        }
+
+        #[test]
+        fn partial_taker() {
+            let mut ask =
+                Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+            let mut bid = Order::new(OrderId::new(2), 1, OrderSide::Bid, 20, 5);
 
         assert!(ask.trade(&mut bid).is_some());
+            assert!(!ask.is_closed());
+            assert!(bid.is_closed());
+    }
     }
 
+    mod invalid_trades {
+        use super::*;
+
     #[test]
-    fn invalid_trade() {
-        let mut ask_1 = Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
-        let mut ask_2 = Order::new(OrderId::new(2), 1, OrderSide::Ask, 10, 10);
+        fn same_side() {
+            let mut ask_1 =
+                Order::new(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+            let mut ask_2 =
+                Order::new(OrderId::new(2), 1, OrderSide::Ask, 10, 10);
 
         assert!(ask_1.trade(&mut ask_2).is_none());
+        }
+
+        #[test]
+        fn incompatible_prices() {
+            let mut ask =
+                Order::new(OrderId::new(1), 1, OrderSide::Ask, 20, 10);
+            let mut bid =
+                Order::new(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+
+            assert!(ask.trade(&mut bid).is_none());
+        }
     }
 
     #[test]
