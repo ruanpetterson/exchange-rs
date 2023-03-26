@@ -1,13 +1,11 @@
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, VecDeque};
-
 use std::hash::Hash;
 use std::marker::PhantomData;
 
 use compact_str::CompactString;
 use indexmap::IndexMap;
-
-use crate::{Asset, Exchange, ExchangeEvent, ExchangeExt, OrderSide};
+use orderbook_core::{Asset, Exchange, ExchangeEvent, ExchangeExt, OrderSide};
 
 pub struct Orderbook<Order: Asset, Event, Trade> {
     #[allow(dead_code)]

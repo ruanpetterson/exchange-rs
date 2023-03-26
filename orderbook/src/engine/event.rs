@@ -1,4 +1,4 @@
-use crate::{Asset, ExchangeEvent};
+use orderbook_core::{Asset, ExchangeEvent};
 
 pub enum Event<Order: Asset> {
     Added(<Order as Asset>::OrderId),

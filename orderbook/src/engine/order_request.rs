@@ -1,11 +1,11 @@
-use super::{Order, OrderId};
-use crate::OrderSide;
-
 use compact_str::CompactString;
+use orderbook_core::OrderSide;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use super::{Order, OrderId};
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {

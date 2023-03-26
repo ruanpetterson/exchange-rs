@@ -1,8 +1,8 @@
 use compact_str::CompactString;
 use once_cell::sync::Lazy;
+use orderbook_core::{Asset, Exchange};
 
 use crate::engine::{Event, Order, Orderbook, Trade};
-use crate::{Asset, Exchange};
 
 const PAIR: CompactString = CompactString::new_inline("BTC/USDC");
 const ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {

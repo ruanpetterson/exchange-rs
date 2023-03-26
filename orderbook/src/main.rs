@@ -5,10 +5,9 @@ use std::time::Instant;
 
 use clap::Parser;
 use compact_str::CompactString;
-
 use orderbook::engine::Engine;
 use orderbook::engine::OrderRequest;
-use orderbook::ExchangeExt;
+use orderbook_core::ExchangeExt;
 
 #[derive(Parser)]
 #[clap(author, version, about)]
