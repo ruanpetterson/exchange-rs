@@ -2,10 +2,9 @@ use std::io::Result;
 use std::path::Path;
 
 use compact_str::{format_compact, CompactString};
-use rand::Rng;
-
 use orderbook::engine::OrderRequest;
-use orderbook::OrderSide;
+use orderbook_core::OrderSide;
+use rand::Rng;
 
 const N: usize = 7_500_000;
 

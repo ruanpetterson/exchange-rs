@@ -1,10 +1,9 @@
-use crate::Asset;
-
-use super::OrderId;
-
+use orderbook_core::Asset;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use super::OrderId;
 
 #[derive(Debug, Error)]
 pub enum TradeError {

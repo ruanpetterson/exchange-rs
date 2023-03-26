@@ -2,12 +2,12 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
 use std::ops::{Deref, DerefMut};
 
-use super::{OrderId, OrderStatus, Trade};
-use crate::{Asset, OrderSide};
-
+use orderbook_core::{Asset, OrderSide};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use super::{OrderId, OrderStatus, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {

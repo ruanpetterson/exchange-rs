@@ -1,5 +1,6 @@
+use orderbook_core::{Asset, Exchange};
+
 use super::{Event, Order, OrderId, OrderRequest, Orderbook, Trade};
-use crate::{Asset, Exchange};
 
 pub struct Engine {
     orderbook: Orderbook<Order, Event<Order>, Trade>,
