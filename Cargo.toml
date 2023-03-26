@@ -1,5 +1,2 @@
 [workspace]
-members = [
-    "orderbook",
-    "orderbook-core",
-]
+members = ["orderbook", "orderbook-core"]
