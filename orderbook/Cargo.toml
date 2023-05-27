@@ -9,6 +9,7 @@ default = ["serde"]
 serde = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
+orderbook-algo = { path = "../orderbook-algo" }
 orderbook-core = { path = "../orderbook-core" }
 
 clap = { version = "3.2.8", features = ["clap_derive", "derive"] }
