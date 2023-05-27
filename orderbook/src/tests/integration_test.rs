@@ -4,8 +4,8 @@ use orderbook_core::{Asset, Exchange};
 
 use crate::engine::{Event, Order, Orderbook, Trade};
 
-const PAIR: CompactString = CompactString::new_inline("BTC/USDC");
-const ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
+static PAIR: CompactString = CompactString::new_inline("BTC/USDC");
+static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
     let input = include_str!("./mock_orders.json");
     serde_json::from_str(input).expect("a set of valid orders")
 });
