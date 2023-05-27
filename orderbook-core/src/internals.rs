@@ -21,16 +21,18 @@ pub trait Exchange {
 
             if let Some(trade) = incoming_order.trade(top_order) {
                 events.push(Self::Event::traded(trade));
-                match (incoming_order.is_closed(), top_order.is_closed()) {
-                    (_, true) => {
-                        // As long as top_order is completed, we can safely
-                        // remove it from orderbook.
-                        self.pop(&incoming_order.side().opposite()).expect(
-                            "Remove top order because it is completed already.",
-                        );
-                    }
-                    (true, false) => break,
-                    (false, false) => unreachable!(),
+                if top_order.is_closed() {
+                    // As long as top order is completed, it can be safely
+                    // removed from orderbook.
+                    self.pop(&incoming_order.side().opposite()).expect(
+                        "Remove top order because it is completed already.",
+                    );
+                }
+
+                if incoming_order.is_closed() {
+                    // As long as incoming order is completed, it can be safely
+                    // removed from orderbook.
+                    break;
                 }
             } else {
                 // Since incoming order is not matching to top order anymore, we
