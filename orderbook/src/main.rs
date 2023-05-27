@@ -39,12 +39,11 @@ fn main() -> Result<()> {
     let orders: Vec<OrderRequest> = serde_json::from_str(&content)?;
 
     let mut engine = Engine::new(&args.pair);
-    let mut events = Vec::with_capacity(1024);
 
     let mut i = 0.0f64;
     let begin = Instant::now();
     for order in orders {
-        events.append(&mut engine.process(order));
+        engine.process(order);
         i += 1.0;
     }
     let end = Instant::now();
