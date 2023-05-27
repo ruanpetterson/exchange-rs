@@ -1,16 +1,17 @@
+use orderbook_algo::DefaultExchange;
 use orderbook_core::Exchange;
 
 use super::{Order, OrderId, OrderRequest, Orderbook, Trade};
 
 pub struct Engine {
-    orderbook: Orderbook<Order, Trade>,
+    orderbook: DefaultExchange<Orderbook<Order, Trade>>,
 }
 
 impl Engine {
     #[inline]
     pub fn new(pair: &str) -> Self {
         Self {
-            orderbook: Orderbook::new(pair),
+            orderbook: Orderbook::new(pair).into(),
         }
     }
 
@@ -19,7 +20,7 @@ impl Engine {
         match incoming_order {
             OrderRequest::Create { .. } => {
                 let order = Order::try_from(incoming_order).unwrap();
-                self.orderbook.matching(order)
+                let _ = self.orderbook.matching(order);
             }
             OrderRequest::Delete { ref order_id } => {
                 self.orderbook
