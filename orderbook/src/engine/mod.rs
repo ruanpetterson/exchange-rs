@@ -1,9 +1,6 @@
 mod engine;
 pub use engine::Engine;
 
-mod event;
-pub use event::Event;
-
 mod order;
 pub use order::{AskOrder, BidOrder, Order};
 

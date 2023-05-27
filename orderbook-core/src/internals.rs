@@ -1,14 +1,12 @@
 pub trait Exchange {
     type Order: Asset;
-    type Event: ExchangeEvent<Order = Self::Order>;
 
     fn insert(&mut self, order: Self::Order);
     fn remove(
         &mut self,
         order: &<Self::Order as Asset>::OrderId,
     ) -> Option<Self::Order>;
-    fn matching(&mut self, order: Self::Order) -> Vec<Self::Event> {
-        let mut events = Vec::with_capacity(32);
+    fn matching(&mut self, order: Self::Order) {
         let mut incoming_order = order;
         while let (false, Some(top_order)) = (
             incoming_order.is_closed(),
@@ -19,8 +17,7 @@ pub trait Exchange {
                 "top order cannot be closed before try to match"
             );
 
-            if let Some(trade) = incoming_order.trade(top_order) {
-                events.push(Self::Event::traded(trade));
+            if let Some(_trade) = incoming_order.trade(top_order) {
                 if top_order.is_closed() {
                     // As long as top order is completed, it can be safely
                     // removed from orderbook.
@@ -44,11 +41,8 @@ pub trait Exchange {
         // We need to check if incoming order is fullfilled. If not, we'll
         // insert it into orderbook.
         if !incoming_order.is_closed() {
-            events.push(Self::Event::added(incoming_order.id()));
             self.insert(incoming_order);
         }
-
-        events
     }
     fn peek(
         &self,
@@ -70,13 +64,6 @@ pub trait ExchangeExt: Exchange {
     fn is_empty(&self) -> bool {
         self.len() == (0, 0)
     }
-}
-
-pub trait ExchangeEvent {
-    type Order: Asset;
-    fn added(order_id: <Self::Order as Asset>::OrderId) -> Self;
-    fn removed(order_id: <Self::Order as Asset>::OrderId) -> Self;
-    fn traded(trade: <Self::Order as Asset>::Trade) -> Self;
 }
 
 pub trait Asset<Order = Self>: Ord + Eq {

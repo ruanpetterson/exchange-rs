@@ -1,8 +1,8 @@
 use compact_str::CompactString;
 use once_cell::sync::Lazy;
-use orderbook_core::{Asset, Exchange};
+use orderbook_core::Asset;
 
-use crate::engine::{Event, Order, Orderbook, Trade};
+use crate::engine::{Order, Orderbook, Trade};
 
 static PAIR: CompactString = CompactString::new_inline("BTC/USDC");
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
@@ -50,12 +50,5 @@ fn taker_advantage_for_bid() {
 
 #[test]
 fn orderbook() {
-    let mut orderbook = Orderbook::<Order, Event<Order>, Trade>::new(&PAIR);
-
-    assert_eq!(orderbook.matching(ORDERS[0]).len(), 1);
-    assert_eq!(orderbook.matching(ORDERS[1]).len(), 1);
-    assert_eq!(orderbook.matching(ORDERS[2]).len(), 1);
-    assert_eq!(orderbook.matching(ORDERS[3]).len(), 2);
-    assert_eq!(orderbook.matching(ORDERS[4]).len(), 1);
-    assert_eq!(orderbook.matching(ORDERS[5]).len(), 2);
+    let mut _orderbook = Orderbook::<Order, Trade>::new(&PAIR);
 }

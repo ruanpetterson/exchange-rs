@@ -5,19 +5,18 @@ use std::marker::PhantomData;
 
 use compact_str::CompactString;
 use indexmap::IndexMap;
-use orderbook_core::{Asset, Exchange, ExchangeEvent, ExchangeExt, OrderSide};
+use orderbook_core::{Asset, Exchange, ExchangeExt, OrderSide};
 
-pub struct Orderbook<Order: Asset, Event, Trade> {
+pub struct Orderbook<Order: Asset, Trade> {
     #[allow(dead_code)]
     pair: CompactString,
     orders: IndexMap<<Order as Asset>::OrderId, Order>,
     ask: BTreeMap<u64, VecDeque<<Order as Asset>::OrderId>>,
     bid: BTreeMap<Reverse<u64>, VecDeque<<Order as Asset>::OrderId>>,
-    _event: PhantomData<Event>,
     _trade: PhantomData<Trade>,
 }
 
-impl<Order, Event, Trade> Orderbook<Order, Event, Trade>
+impl<Order, Trade> Orderbook<Order, Trade>
 where
     Order: Asset,
 {
@@ -28,21 +27,18 @@ where
             orders: IndexMap::new(),
             ask: BTreeMap::new(),
             bid: BTreeMap::new(),
-            _event: PhantomData,
             _trade: PhantomData,
         }
     }
 }
 
-impl<Order, Event, Trade> Exchange for Orderbook<Order, Event, Trade>
+impl<Order, Trade> Exchange for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
-    Event: ExchangeEvent<Order = Order>,
 {
     type Order = Order;
-    type Event = Event;
 
     #[inline]
     fn insert(&mut self, order: Self::Order) {
@@ -126,12 +122,11 @@ where
     }
 }
 
-impl<Order, Event, Trade> ExchangeExt for Orderbook<Order, Event, Trade>
+impl<Order, Trade> ExchangeExt for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
-    Event: ExchangeEvent<Order = Order>,
 {
     fn spread(&self) -> Option<(u64, u64)> {
         Some((

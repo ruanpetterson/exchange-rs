@@ -1,9 +1,9 @@
-use orderbook_core::{Asset, Exchange};
+use orderbook_core::Exchange;
 
-use super::{Event, Order, OrderId, OrderRequest, Orderbook, Trade};
+use super::{Order, OrderId, OrderRequest, Orderbook, Trade};
 
 pub struct Engine {
-    orderbook: Orderbook<Order, Event<Order>, Trade>,
+    orderbook: Orderbook<Order, Trade>,
 }
 
 impl Engine {
@@ -15,30 +15,21 @@ impl Engine {
     }
 
     #[inline]
-    pub fn process(
-        &mut self,
-        incoming_order: OrderRequest,
-    ) -> Vec<<Orderbook<Order, Event<Order>, Trade> as Exchange>::Event> {
+    pub fn process(&mut self, incoming_order: OrderRequest) {
         match incoming_order {
             OrderRequest::Create { .. } => {
                 let order = Order::try_from(incoming_order).unwrap();
                 self.orderbook.matching(order)
             }
             OrderRequest::Delete { ref order_id } => {
-                if let Some(order) = self
-                    .orderbook
-                    .remove(&OrderId::new(order_id.parse::<u64>().unwrap()))
-                {
-                    vec![Event::Removed(order.id())]
-                } else {
-                    vec![]
-                }
+                self.orderbook
+                    .remove(&OrderId::new(order_id.parse::<u64>().unwrap()));
             }
         }
     }
 
     #[inline]
-    pub fn orderbook(&self) -> &Orderbook<Order, Event<Order>, Trade> {
+    pub fn orderbook(&self) -> &Orderbook<Order, Trade> {
         &self.orderbook
     }
 }
