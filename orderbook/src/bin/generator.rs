@@ -1,5 +1,5 @@
-use std::io::Result;
 use std::path::Path;
+use std::{fs::File, io::Result};
 
 use compact_str::{format_compact, CompactString};
 use orderbook::engine::OrderRequest;
@@ -9,11 +9,18 @@ use rand::Rng;
 const N: usize = 7_500_000;
 
 fn main() -> Result<()> {
-    let mut rng = rand::thread_rng();
-    let mut orders = Vec::with_capacity(N);
+    let path = Path::new("./orders.json");
+    let file = File::options()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)?;
 
-    for i in 1..=N {
-        let order = match rng.gen_range(0..1000) {
+    let mut rng = rand::thread_rng();
+    let orders = (1..=N)
+        .into_iter()
+        .map(|i| match rng.gen_range(0..1000) {
             0 => OrderRequest::Delete {
                 order_id: format_compact!("{}", rng.gen_range(1..=i as u64)),
             },
@@ -28,15 +35,10 @@ fn main() -> Result<()> {
                     _ => OrderSide::Bid,
                 },
             },
-        };
+        })
+        .collect::<Vec<_>>();
 
-        orders.push(order);
-    }
-
-    let content = serde_json::to_string(&orders)?;
-    let path = Path::new("./orders.json");
-
-    std::fs::write(&path, content)?;
+    serde_json::to_writer(file, &orders)?;
 
     Ok(())
 }
