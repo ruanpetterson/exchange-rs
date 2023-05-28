@@ -23,7 +23,9 @@ pub trait Asset<Order = Self>: Ord {
     fn status(&self) -> Self::OrderStatus;
     fn is_closed(&self) -> bool;
     fn is_immediate_or_cancel(&self) -> bool;
+    fn is_post_only(&self) -> bool;
     fn trade(&mut self, order: &mut Order) -> Option<Self::Trade>;
+    fn matches(&self, order: &Order) -> bool;
     fn cancel(&mut self);
 }
 
