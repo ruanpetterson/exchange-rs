@@ -44,7 +44,7 @@ impl TryFrom<OrderRequest> for Order {
                 OrderId::new(order_id.parse::<u64>().unwrap()),
                 account_id.parse::<u64>().unwrap(),
                 side,
-                OrderType::Limit,
+                OrderType::default(),
                 limit_price.trunc().to_u64().unwrap() * 100
                     + limit_price.fract().to_u64().unwrap(),
                 amount.trunc().to_u64().unwrap() * 100

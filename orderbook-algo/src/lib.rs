@@ -46,6 +46,18 @@ where
                 "top order cannot be closed before try to match"
             );
 
+            if incoming_order.is_post_only()
+                && incoming_order.matches(top_order)
+            {
+                // Post-only orders must go directly to orderbook and do not be
+                // executed as taker at all, otherwise it'll be canceled.
+                incoming_order.cancel();
+            }
+
+            // TODO: merge `matches` and `trade` operation and provide something
+            // like `trade.commit()` to persist the changes in both orders.
+            //
+            // This will avoid peforming `matches` twice.
             if let Some(_trade) = incoming_order.trade(top_order) {
                 if top_order.is_closed() {
                     // As long as top order is completed, it can be safely
