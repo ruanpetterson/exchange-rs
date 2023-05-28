@@ -38,7 +38,12 @@ pub trait Exchange {
 pub trait ExchangeExt: Exchange {
     /// Returns the difference or gap that exists between bid and ask
     /// prices.
-    fn spread(&self) -> Option<(u64, u64)>;
+    fn spread(
+        &self,
+    ) -> Option<(
+        <Self::Order as Asset>::OrderPrice,
+        <Self::Order as Asset>::OrderPrice,
+    )>;
 
     /// Returns the number of shares being bid on or offered.
     fn len(&self) -> (usize, usize);
