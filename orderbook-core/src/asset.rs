@@ -1,10 +1,14 @@
-pub trait Asset<Order = Self>: Ord + Eq {
+pub trait Asset<Order = Self>: Ord {
+    /// Order amount.
+    type OrderAmount: Copy + Ord;
     /// Order unique identifier.
-    type OrderId: Copy + Clone + Eq;
-    /// Order current status.
-    type OrderStatus: Eq + Copy + Clone;
+    type OrderId: Copy + Eq;
+    /// Order price.
+    type OrderPrice: Copy + Ord;
     /// Order side.
     type OrderSide: Opposite;
+    /// Order current status.
+    type OrderStatus: Copy + Eq;
     /// Trade struct.
     type Trade;
     /// Return order unique identifier.
@@ -12,9 +16,9 @@ pub trait Asset<Order = Self>: Ord + Eq {
     /// Return order side.
     fn side(&self) -> Self::OrderSide;
     /// Return order limit price.
-    fn limit_price(&self) -> u64;
+    fn limit_price(&self) -> Self::OrderPrice;
     /// Return order remaining amount.
-    fn remaining(&self) -> u64;
+    fn remaining(&self) -> Self::OrderAmount;
     /// Return current order status.
     fn status(&self) -> Self::OrderStatus;
     fn is_closed(&self) -> bool;

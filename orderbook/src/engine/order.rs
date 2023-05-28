@@ -84,7 +84,9 @@ impl Ord for Order {
 }
 
 impl Asset for Order {
+    type OrderAmount = u64;
     type OrderId = OrderId;
+    type OrderPrice = u64;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = Trade;

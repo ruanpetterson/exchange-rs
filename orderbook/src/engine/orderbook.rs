@@ -11,8 +11,14 @@ pub struct Orderbook<Order: Asset, Trade> {
     #[allow(dead_code)]
     pair: CompactString,
     orders: IndexMap<<Order as Asset>::OrderId, Order>,
-    ask: BTreeMap<u64, VecDeque<<Order as Asset>::OrderId>>,
-    bid: BTreeMap<Reverse<u64>, VecDeque<<Order as Asset>::OrderId>>,
+    ask: BTreeMap<
+        <Order as Asset>::OrderPrice,
+        VecDeque<<Order as Asset>::OrderId>,
+    >,
+    bid: BTreeMap<
+        Reverse<<Order as Asset>::OrderPrice>,
+        VecDeque<<Order as Asset>::OrderId>,
+    >,
     _trade: PhantomData<Trade>,
 }
 
@@ -128,7 +134,10 @@ where
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
-    fn spread(&self) -> Option<(u64, u64)> {
+    fn spread(
+        &self,
+    ) -> Option<(<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice)>
+    {
         Some((
             self.peek(&OrderSide::Ask)?.limit_price(),
             self.peek(&OrderSide::Bid)?.limit_price(),
