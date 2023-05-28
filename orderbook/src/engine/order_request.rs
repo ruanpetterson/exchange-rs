@@ -1,8 +1,6 @@
 use compact_str::CompactString;
 use orderbook_core::OrderSide;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::{Order, OrderId, OrderType};
@@ -13,7 +11,7 @@ pub enum OrderRequestError {
     MismatchType,
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type_op", rename_all = "UPPERCASE"))]
 pub enum OrderRequest {
     Create {

@@ -3,8 +3,6 @@ use std::cmp::{Ordering, Reverse};
 use std::ops::{Deref, DerefMut};
 
 use orderbook_core::{Asset, OrderSide};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::{OrderId, OrderStatus, OrderType, Trade};
@@ -17,7 +15,7 @@ pub enum OrderError {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Order {
     id: OrderId,
     account_id: u64,

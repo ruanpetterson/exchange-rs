@@ -1,6 +1,4 @@
 use orderbook_core::Asset;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::OrderId;
@@ -13,7 +11,7 @@ pub enum TradeError {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Trade {
     pub(crate) taker: OrderId,
     pub(crate) maker: OrderId,
