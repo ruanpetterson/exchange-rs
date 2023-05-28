@@ -16,5 +16,8 @@ pub use order_request::OrderRequest;
 mod order_status;
 pub use order_status::OrderStatus;
 
+mod order_type;
+pub use order_type::OrderType;
+
 mod trade;
 pub use trade::Trade;

@@ -5,7 +5,7 @@ use rust_decimal::{prelude::ToPrimitive, Decimal};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use super::{Order, OrderId};
+use super::{Order, OrderId, OrderType};
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {
@@ -46,6 +46,7 @@ impl TryFrom<OrderRequest> for Order {
                 OrderId::new(order_id.parse::<u64>().unwrap()),
                 account_id.parse::<u64>().unwrap(),
                 side,
+                OrderType::Limit,
                 limit_price.trunc().to_u64().unwrap() * 100
                     + limit_price.fract().to_u64().unwrap(),
                 amount.trunc().to_u64().unwrap() * 100

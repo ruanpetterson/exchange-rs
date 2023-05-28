@@ -70,7 +70,9 @@ where
 
         // We need to check if incoming order is fullfilled. If not, we'll
         // insert it into orderbook.
-        if !incoming_order.is_closed() {
+        if !incoming_order.is_closed()
+            && !incoming_order.is_immediate_or_cancel()
+        {
             self.insert(incoming_order);
         }
 
