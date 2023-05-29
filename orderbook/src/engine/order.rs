@@ -179,10 +179,8 @@ impl Asset for Order {
 
         taker.matches(maker).then(|| {
             let exchanged = taker.remaining().min(maker.remaining());
-            let price = match taker.side() {
-                OrderSide::Ask => taker.limit_price().max(maker.limit_price()),
-                OrderSide::Bid => taker.limit_price().min(maker.limit_price()),
-            };
+            let price = maker.limit_price();
+
             subtract_amount(taker, exchanged);
             subtract_amount(maker, exchanged);
 
@@ -198,12 +196,21 @@ impl Asset for Order {
     #[inline]
     fn matches(&self, order: &Self) -> bool {
         let (taker, maker) = (self, order);
-        (!taker.is_closed() && !maker.is_closed())
-            && match (taker.side(), maker.side()) {
-                (OrderSide::Ask, OrderSide::Bid) => taker <= maker,
-                (OrderSide::Bid, OrderSide::Ask) => taker >= maker,
-                _ => false,
+
+        // Matching cannot occur between closed orders.
+        if taker.is_closed() || maker.is_closed() {
+            return false;
+        }
+
+        match (taker.side(), maker.side()) {
+            (OrderSide::Ask, OrderSide::Bid) => {
+                matches!(taker.type_, OrderType::Market) || taker <= maker
             }
+            (OrderSide::Bid, OrderSide::Ask) => {
+                matches!(taker.type_, OrderType::Market) || taker >= maker
+            }
+            _ => false,
+        }
     }
 
     #[inline]
