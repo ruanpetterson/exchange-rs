@@ -36,7 +36,10 @@ fn taker_advantage_for_ask() {
     let mut bid = ORDERS[2];
 
     let trade = ask.trade(&mut bid).expect("a sucessful trade");
-    assert_eq!(trade.price, ask.limit_price().max(bid.limit_price()));
+    assert_eq!(
+        trade.price,
+        ask.limit_price().unwrap().max(bid.limit_price().unwrap())
+    );
 }
 
 #[test]
@@ -45,7 +48,10 @@ fn taker_advantage_for_bid() {
     let mut ask = ORDERS[3];
 
     let trade = bid.trade(&mut ask).expect("a sucessful trade");
-    assert_eq!(trade.price, ask.limit_price().min(bid.limit_price()));
+    assert_eq!(
+        trade.price,
+        ask.limit_price().unwrap().min(bid.limit_price().unwrap())
+    );
 }
 
 #[test]

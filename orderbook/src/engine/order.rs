@@ -20,9 +20,8 @@ pub struct Order {
     id: OrderId,
     account_id: u64,
     side: OrderSide,
-    #[cfg_attr(feature = "serde", serde(default))]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     type_: OrderType,
-    limit_price: u64,
     amount: u64,
     #[cfg_attr(feature = "serde", serde(default))]
     filled: u64,
@@ -36,7 +35,6 @@ impl Order {
         account_id: u64,
         side: OrderSide,
         type_: OrderType,
-        limit_price: u64,
         amount: u64,
     ) -> Self {
         Self {
@@ -44,7 +42,6 @@ impl Order {
             account_id,
             side,
             type_,
-            limit_price,
             amount,
             filled: 0,
             status: OrderStatus::Open,
@@ -63,8 +60,10 @@ impl Order {
             id,
             account_id,
             side,
-            type_: OrderType::default(),
-            limit_price,
+            type_: OrderType::Limit {
+                limit_price,
+                post_only: false,
+            },
             amount,
             filled: 0,
             status: OrderStatus::Open,
@@ -90,18 +89,13 @@ impl Eq for Order {}
 impl PartialOrd for Order {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Order {
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.id.eq(&other.id) {
+        let ord = if self.id.eq(&other.id) {
             Ordering::Equal
         } else {
-            self.limit_price.cmp(&other.limit_price)
-        }
+            self.limit_price()?.cmp(&other.limit_price()?)
+        };
+
+        Some(ord)
     }
 }
 
@@ -124,12 +118,15 @@ impl Asset for Order {
     }
 
     #[inline]
-    fn limit_price(&self) -> u64 {
-        self.limit_price
+    fn limit_price(&self) -> Option<Self::OrderPrice> {
+        match self.type_ {
+            OrderType::Limit { limit_price, .. } => Some(limit_price),
+            _ => None,
+        }
     }
 
     #[inline]
-    fn remaining(&self) -> u64 {
+    fn remaining(&self) -> Self::OrderAmount {
         self.amount - self.filled
     }
 
@@ -155,7 +152,7 @@ impl Asset for Order {
 
     #[inline]
     fn is_post_only(&self) -> bool {
-        matches!(self.type_, OrderType::Limit { post_only } if post_only)
+        matches!(self.type_, OrderType::Limit { post_only, .. } if post_only)
     }
 
     #[inline]
@@ -179,7 +176,8 @@ impl Asset for Order {
 
         taker.matches(maker).then(|| {
             let exchanged = taker.remaining().min(maker.remaining());
-            let price = maker.limit_price();
+            let price =
+                maker.limit_price().expect("maker must always have a price");
 
             subtract_amount(taker, exchanged);
             subtract_amount(maker, exchanged);
@@ -224,11 +222,11 @@ impl Asset for Order {
 }
 
 #[repr(transparent)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct AskOrder(Order);
 
 #[repr(transparent)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct BidOrder(Order);
 
 impl TryFrom<Order> for AskOrder {

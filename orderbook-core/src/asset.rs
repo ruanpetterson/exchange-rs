@@ -1,4 +1,4 @@
-pub trait Asset<Order = Self>: Ord {
+pub trait Asset<Order = Self>: PartialOrd {
     /// Order amount.
     type OrderAmount: Copy + Ord;
     /// Order unique identifier.
@@ -16,7 +16,7 @@ pub trait Asset<Order = Self>: Ord {
     /// Return order side.
     fn side(&self) -> Self::OrderSide;
     /// Return order limit price.
-    fn limit_price(&self) -> Self::OrderPrice;
+    fn limit_price(&self) -> Option<Self::OrderPrice>;
     /// Return order remaining amount.
     fn remaining(&self) -> Self::OrderAmount;
     /// Return current order status.

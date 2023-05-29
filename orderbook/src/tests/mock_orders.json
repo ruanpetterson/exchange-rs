@@ -5,6 +5,7 @@
         "side": "ASK",
         "status": "OPEN",
         "amount": 100,
+        "type": "LIMIT",
         "limit_price": 50000
     },
     {
@@ -13,6 +14,7 @@
         "side": "BID",
         "status": "OPEN",
         "amount": 100,
+        "type": "LIMIT",
         "limit_price": 60000
     },
     {
@@ -21,6 +23,7 @@
         "side": "BID",
         "status": "OPEN",
         "amount": 100,
+        "type": "LIMIT",
         "limit_price": 60000
     },
     {
@@ -29,6 +32,7 @@
         "side": "ASK",
         "status": "OPEN",
         "amount": 200,
+        "type": "LIMIT",
         "limit_price": 50000
     },
     {
@@ -37,6 +41,7 @@
         "side": "ASK",
         "status": "OPEN",
         "amount": 100,
+        "type": "LIMIT",
         "limit_price": 50000
     },
     {
@@ -45,6 +50,7 @@
         "side": "BID",
         "status": "OPEN",
         "amount": 200,
+        "type": "LIMIT",
         "limit_price": 60000
     }
 ]

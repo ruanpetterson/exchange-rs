@@ -51,11 +51,19 @@ where
         let level = match order.side() {
             OrderSide::Ask => self
                 .ask
-                .entry(order.limit_price())
+                .entry(
+                    order
+                        .limit_price()
+                        .expect("bookable orders must have a limit price"),
+                )
                 .or_insert_with(|| VecDeque::with_capacity(8)),
             OrderSide::Bid => self
                 .bid
-                .entry(Reverse(order.limit_price()))
+                .entry(Reverse(
+                    order
+                        .limit_price()
+                        .expect("bookable orders must have a limit price"),
+                ))
                 .or_insert_with(|| VecDeque::with_capacity(8)),
         };
 
@@ -139,8 +147,8 @@ where
     ) -> Option<(<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice)>
     {
         Some((
-            self.peek(&OrderSide::Ask)?.limit_price(),
-            self.peek(&OrderSide::Bid)?.limit_price(),
+            self.peek(&OrderSide::Ask)?.limit_price()?,
+            self.peek(&OrderSide::Bid)?.limit_price()?,
         ))
     }
 
