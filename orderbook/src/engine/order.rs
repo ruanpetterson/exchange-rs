@@ -9,6 +9,8 @@ use super::{OrderId, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {
+    #[error("fill exceeds remaning amount")]
+    Overfill,
     #[error("sides mismatch")]
     MismatchSide,
 }
@@ -68,6 +70,47 @@ impl Order {
             filled: 0,
             status: OrderStatus::Open,
         }
+    }
+
+    /// Fill an order within the specified amount.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `amount` is greater then `remaining`.
+    #[inline]
+    pub(crate) fn fill(&mut self, amount: u64) {
+        self.try_fill(amount)
+            .expect("order does not have available amount to fill")
+    }
+
+    /// Fill an order within the specified amount.
+    ///
+    /// # Safety
+    ///
+    /// This results in undefined behavior when current `Order::filled`
+    /// overflows `Order::amount`.
+    #[inline]
+    pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
+        self.filled += amount;
+        self.status = if self.filled == self.amount {
+            OrderStatus::Completed
+        } else {
+            OrderStatus::Partial
+        };
+    }
+
+    /// Fill an order within the specified amount, returning an error if
+    /// something fails.
+    #[inline]
+    pub(crate) fn try_fill(&mut self, amount: u64) -> Result<(), OrderError> {
+        if amount > self.remaining() {
+            return Err(OrderError::Overfill);
+        }
+
+        // SAFETY: we already checked that `remaining >= amount`.
+        unsafe { self.fill_unchecked(amount) };
+
+        Ok(())
     }
 }
 
@@ -159,36 +202,8 @@ impl Asset for Order {
     fn trade(&mut self, other: &mut Self) -> Option<Self::Trade> {
         let (taker, maker) = (self, other);
 
-        #[inline(always)]
-        fn subtract_amount(order: &mut Order, exchanged: u64) {
-            debug_assert!(
-                order.remaining() >= exchanged,
-                "exchanged amount should be less or equal to remaining"
-            );
-
-            order.filled += exchanged;
-            order.status = if order.filled == order.amount {
-                OrderStatus::Completed
-            } else {
-                OrderStatus::Partial
-            };
-        }
-
-        taker.matches(maker).then(|| {
-            let exchanged = taker.remaining().min(maker.remaining());
-            let price =
-                maker.limit_price().expect("maker must always have a price");
-
-            subtract_amount(taker, exchanged);
-            subtract_amount(maker, exchanged);
-
-            Trade {
-                taker: taker.id,
-                maker: maker.id,
-                amount: exchanged,
-                price,
-            }
-        })
+        // TODO: provide more useuful outputs to matching algorithms.
+        Trade::new(taker, maker).ok()
     }
 
     #[inline]
