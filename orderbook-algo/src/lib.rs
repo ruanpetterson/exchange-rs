@@ -80,11 +80,15 @@ where
             }
         }
 
-        // We need to check if incoming order is fullfilled. If not, we'll
-        // insert it into orderbook.
-        if !incoming_order.is_closed()
-            && !incoming_order.is_immediate_or_cancel()
-        {
+        // If incoming order is immediate or cancel, it must be closed at the
+        // end of matching.
+        if incoming_order.is_immediate_or_cancel() {
+            incoming_order.cancel();
+        }
+
+        // If incoming order is not full-filled and open, it must be inserted
+        // into the orderbook.
+        if !incoming_order.is_closed() {
             self.insert(incoming_order);
         }
 
