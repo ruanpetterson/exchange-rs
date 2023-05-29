@@ -1,12 +1,26 @@
 use orderbook_core::Asset;
 use thiserror::Error;
 
-use super::OrderId;
+use super::{Order, OrderId};
 
 #[derive(Debug, Error)]
 pub enum TradeError {
-    #[error("taker and maker must be opposite each other")]
-    MismatchSides,
+    #[error(transparent)]
+    PriceError(#[from] PriceError),
+    #[error(transparent)]
+    SideError(#[from] SideError),
+}
+
+#[derive(Debug, Error)]
+pub enum SideError {
+    #[error("taker and maker must be at opposite sides")]
+    Mismatch,
+}
+
+#[derive(Debug, Error)]
+pub enum PriceError {
+    #[error("prices do not match each other")]
+    Mismatch,
 }
 
 #[derive(Debug)]
@@ -19,13 +33,28 @@ pub struct Trade {
     pub(crate) price: u64,
 }
 
-impl<Order: Asset<Trade = Self>> TryFrom<(&mut Order, &mut Order)> for Trade {
-    type Error = TradeError;
+impl Trade {
+    /// Constructs a new `Trade`, returning an error if something fails.
+    pub fn new(
+        taker: &mut Order,
+        maker: &mut Order,
+    ) -> Result<Trade, TradeError> {
+        if !taker.matches(maker) {
+            return Err(TradeError::PriceError(PriceError::Mismatch));
+        }
 
-    #[inline]
-    fn try_from(
-        (taker, maker): (&mut Order, &mut Order),
-    ) -> Result<Self, Self::Error> {
-        taker.trade(maker).ok_or(TradeError::MismatchSides)
+        let exchanged = taker.remaining().min(maker.remaining());
+        let price =
+            maker.limit_price().expect("maker must always have a price");
+
+        taker.fill(exchanged);
+        maker.fill(exchanged);
+
+        Ok(Trade {
+            taker: taker.id(),
+            maker: maker.id(),
+            amount: exchanged,
+            price,
+        })
     }
 }
