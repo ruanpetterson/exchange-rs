@@ -66,13 +66,6 @@ where
                         "Remove top order because it is completed already.",
                     );
                 }
-
-                if incoming_order.is_closed() {
-                    // As long as incoming order is completed, it can be
-                    // safely removed from
-                    // orderbook.
-                    break;
-                }
             } else {
                 // Since incoming order is not matching to top order
                 // anymore, we can move on.
