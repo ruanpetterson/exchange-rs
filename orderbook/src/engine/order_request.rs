@@ -3,7 +3,7 @@ use orderbook_core::OrderSide;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use thiserror::Error;
 
-use super::{Order, OrderId, OrderType};
+use super::{Order, OrderId};
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {
@@ -40,11 +40,10 @@ impl TryFrom<OrderRequest> for Order {
                 limit_price,
                 side,
                 ..
-            } => Ok(Order::new(
+            } => Ok(Order::new_limit(
                 OrderId::new(order_id.parse::<u64>().unwrap()),
                 account_id.parse::<u64>().unwrap(),
                 side,
-                OrderType::default(),
                 limit_price.trunc().to_u64().unwrap() * 100
                     + limit_price.fract().to_u64().unwrap(),
                 amount.trunc().to_u64().unwrap() * 100
