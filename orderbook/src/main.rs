@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let content = match &args.input.unwrap_or_default() {
-        Input::File(path) => std::fs::read_to_string(&path)?,
+        Input::File(path) => std::fs::read_to_string(path)?,
         Input::Stdin => {
             let mut buffer = String::new();
             std::io::stdin().read_to_string(&mut buffer)?;
