@@ -1,4 +1,5 @@
 use std::cmp::Reverse;
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -81,11 +82,54 @@ where
     #[inline]
     fn remove(
         &mut self,
-        _order_id: &<Self::Order as Asset>::OrderId,
+        order_id: &<Self::Order as Asset>::OrderId,
     ) -> Option<Self::Order> {
-        // TODO: implement a way to remove orders. It should not let dangling
-        // levels (level with no orders).
-        todo!()
+        let order = self.orders.remove(order_id)?;
+
+        let limit_price = order
+            .limit_price()
+            .expect("bookable orders must have a limit price");
+
+        match order.side() {
+            OrderSide::Ask => {
+                let Entry::Occupied(mut level) = self.ask.entry(limit_price)
+                else {
+                    unreachable!();
+                };
+
+                // It prevents dangling levels (level with no orders).
+                if level.get().len() == 1 {
+                    level.remove().pop_front()
+                } else {
+                    level
+                        .get()
+                        .iter()
+                        .position(|&order_id| order.id() == order_id)
+                        .and_then(|index| level.get_mut().remove(index))
+                }
+            }
+            OrderSide::Bid => {
+                let Entry::Occupied(mut level) =
+                    self.bid.entry(Reverse(limit_price))
+                else {
+                    unreachable!();
+                };
+
+                // It prevents dangling levels (level with no orders).
+                if level.get().len() == 1 {
+                    level.remove().pop_front()
+                } else {
+                    level
+                        .get()
+                        .iter()
+                        .position(|&order_id| order.id() == order_id)
+                        .and_then(|index| level.get_mut().remove(index))
+                }
+            }
+        }
+        .expect("indexed orders must be in the book tree");
+
+        Some(order)
     }
 
     #[inline]
@@ -121,7 +165,7 @@ where
         match side {
             OrderSide::Ask => {
                 let mut level = self.ask.first_entry()?;
-                // It prevents dagling levels (level with no orders).
+                // It prevents dangling levels (level with no orders).
                 if level.get().len() == 1 {
                     level.remove().pop_front()
                 } else {
@@ -130,7 +174,7 @@ where
             }
             OrderSide::Bid => {
                 let mut level = self.bid.first_entry()?;
-                // It prevents dagling levels (level with no orders).
+                // It prevents dangling levels (level with no orders).
                 if level.get().len() == 1 {
                     level.remove().pop_front()
                 } else {
