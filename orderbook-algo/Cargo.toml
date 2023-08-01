@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 orderbook-core = { path = "../orderbook-core" }
+thiserror = "1.0.44"

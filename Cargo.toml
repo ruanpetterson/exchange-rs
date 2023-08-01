@@ -1,2 +1,8 @@
 [workspace]
-members = ["orderbook", "orderbook-algo", "orderbook-core"]
+resolver = "2"
+
+members = [
+    "orderbook",
+    "orderbook-algo",
+    "orderbook-core",
+]

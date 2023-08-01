@@ -19,7 +19,6 @@ fn main() -> Result<()> {
 
     let mut rng = rand::thread_rng();
     let orders = (1..=N)
-        .into_iter()
         .map(|i| match rng.gen_range(0..1000) {
             0 => OrderRequest::Delete {
                 order_id: format_compact!("{}", rng.gen_range(1..=i as u64)),

@@ -1,6 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use orderbook_core::{Asset, Exchange, ExchangeExt, Opposite};
+use thiserror::Error;
 
 pub struct DefaultExchange<E>(E);
 
@@ -35,7 +36,7 @@ where
     pub fn matching(
         &mut self,
         order: <E as Exchange>::Order,
-    ) -> Result<(), ()> {
+    ) -> Result<(), DefaultExchangeError> {
         let mut incoming_order = order;
         while let (false, Some(top_order)) = (
             incoming_order.is_closed(),
@@ -88,3 +89,6 @@ where
         Ok(())
     }
 }
+
+#[derive(Debug, Error)]
+pub enum DefaultExchangeError {}

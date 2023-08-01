@@ -25,10 +25,20 @@ where
 {
     #[inline]
     pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<Order, Trade> Default for Orderbook<Order, Trade>
+where
+    Order: Asset,
+{
+    #[inline]
+    fn default() -> Self {
         Self {
-            orders: IndexMap::new(),
-            ask: BTreeMap::new(),
-            bid: BTreeMap::new(),
+            orders: IndexMap::default(),
+            ask: BTreeMap::default(),
+            bid: BTreeMap::default(),
             _trade: PhantomData,
         }
     }

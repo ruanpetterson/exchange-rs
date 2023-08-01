@@ -1,5 +1,8 @@
 use crate::Asset;
 
+pub type Spread<Order> =
+    (<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice);
+
 /// An interface for dealing with exchange.
 ///
 /// This is the core trait for exchange implementation.
@@ -38,12 +41,7 @@ pub trait Exchange {
 pub trait ExchangeExt: Exchange {
     /// Returns the difference or gap that exists between bid and ask
     /// prices.
-    fn spread(
-        &self,
-    ) -> Option<(
-        <Self::Order as Asset>::OrderPrice,
-        <Self::Order as Asset>::OrderPrice,
-    )>;
+    fn spread(&self) -> Option<Spread<Self::Order>>;
 
     /// Returns the number of shares being bid on or offered.
     fn len(&self) -> (usize, usize);
