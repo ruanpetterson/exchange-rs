@@ -15,6 +15,7 @@ pub struct Trade {
 
 impl Trade {
     /// Constructs a new `Trade`, returning an error if something fails.
+    #[inline]
     pub fn new(
         taker: &mut Order,
         maker: &mut Order,
@@ -36,6 +37,12 @@ impl Trade {
             amount: exchanged,
             price,
         })
+    }
+
+    /// Returns the traded price.
+    #[inline]
+    pub fn price(&self) -> u64 {
+        self.price
     }
 }
 

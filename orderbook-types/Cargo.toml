@@ -1,0 +1,19 @@
+[package]
+name = "orderbook-types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
+
+[dependencies]
+orderbook-core = { path = "../orderbook-core" }
+
+compact_str = "0.7.1"
+indexmap = "2.0.0"
+rust_decimal = "1.31.0"
+serde = { version = "~1.0", features = ["derive"], optional = true }
+thiserror = "~1.0"

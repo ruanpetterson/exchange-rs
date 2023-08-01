@@ -1,9 +1,8 @@
 use compact_str::CompactString;
 use orderbook_algo::DefaultExchange;
 use orderbook_core::Exchange;
+use orderbook_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
 use thiserror::Error;
-
-use super::{Order, OrderId, OrderRequest, Orderbook, Trade};
 
 pub struct Engine {
     pair: CompactString,

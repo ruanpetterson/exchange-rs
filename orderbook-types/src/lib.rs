@@ -1,12 +1,5 @@
-#[allow(clippy::module_inception)]
-mod engine;
-pub use engine::Engine;
-
 mod order;
 pub use order::{AskOrder, BidOrder, Order};
-
-mod orderbook;
-pub use self::orderbook::Orderbook;
 
 mod order_id;
 pub use order_id::OrderId;
@@ -19,6 +12,9 @@ pub use order_status::OrderStatus;
 
 mod order_type;
 pub use order_type::OrderType;
+
+mod orderbook;
+pub use orderbook::*;
 
 mod trade;
 pub use trade::Trade;

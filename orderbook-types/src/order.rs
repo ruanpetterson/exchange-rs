@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 use orderbook_core::{Asset, OrderSide};
 use thiserror::Error;
 
-use super::{OrderId, OrderStatus, OrderType, Trade};
+use crate::{OrderId, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {
@@ -15,12 +15,10 @@ pub enum OrderError {
     MismatchSide,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Copy, Clone))]
+#[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Order {
     id: OrderId,
-    account_id: u64,
     side: OrderSide,
     #[cfg_attr(feature = "serde", serde(flatten))]
     type_: OrderType,
@@ -34,14 +32,12 @@ impl Order {
     #[inline]
     pub fn new(
         id: OrderId,
-        account_id: u64,
         side: OrderSide,
         type_: OrderType,
         amount: u64,
     ) -> Self {
         Self {
             id,
-            account_id,
             side,
             type_,
             amount,
@@ -53,14 +49,12 @@ impl Order {
     #[inline]
     pub fn new_limit(
         id: OrderId,
-        account_id: u64,
         side: OrderSide,
         limit_price: u64,
         amount: u64,
     ) -> Self {
         Self {
             id,
-            account_id,
             side,
             type_: OrderType::Limit {
                 limit_price,
@@ -326,7 +320,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .filter_map(|(id, side)| {
-                Order::new_limit(OrderId::new(id as u64), 1, side, 100, 100)
+                Order::new_limit(OrderId::new(id as u64), side, 100, 100)
                     .try_into()
                     .ok()
             })
@@ -346,7 +340,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .filter_map(|(id, side)| {
-                Order::new_limit(OrderId::new(id as u64), 1, side, 100, 100)
+                Order::new_limit(OrderId::new(id as u64), side, 100, 100)
                     .try_into()
                     .ok()
             })
@@ -366,9 +360,9 @@ mod tests {
         #[test]
         fn same_prices() {
             let mut ask =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
             let mut bid =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+                Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
 
             assert!(ask.trade(&mut bid).is_some());
         }
@@ -376,9 +370,9 @@ mod tests {
         #[test]
         fn different_prices() {
             let mut ask =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
             let mut bid =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 20, 10);
+                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
 
             assert!(ask.trade(&mut bid).is_some());
         }
@@ -386,9 +380,9 @@ mod tests {
         #[test]
         fn partial_maker() {
             let mut ask =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 5);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 5);
             let mut bid =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 20, 10);
+                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
 
             assert!(ask.trade(&mut bid).is_some());
             assert!(ask.is_closed());
@@ -398,9 +392,9 @@ mod tests {
         #[test]
         fn partial_taker() {
             let mut ask =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
             let mut bid =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 20, 5);
+                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 5);
 
             assert!(ask.trade(&mut bid).is_some());
             assert!(!ask.is_closed());
@@ -414,9 +408,9 @@ mod tests {
         #[test]
         fn same_side() {
             let mut ask_1 =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
             let mut ask_2 =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Ask, 10, 10);
+                Order::new_limit(OrderId::new(2), OrderSide::Ask, 10, 10);
 
             assert!(ask_1.trade(&mut ask_2).is_none());
         }
@@ -424,9 +418,9 @@ mod tests {
         #[test]
         fn incompatible_prices() {
             let mut ask =
-                Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 20, 10);
+                Order::new_limit(OrderId::new(1), OrderSide::Ask, 20, 10);
             let mut bid =
-                Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 10, 10);
+                Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
 
             assert!(ask.trade(&mut bid).is_none());
         }
@@ -434,18 +428,15 @@ mod tests {
 
     #[test]
     fn cancel_order() {
-        let mut ask =
-            Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
+        let mut ask = Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
         ask.cancel();
         assert_eq!(ask.status(), OrderStatus::Cancelled);
     }
 
     #[test]
     fn close_order() {
-        let mut ask =
-            Order::new_limit(OrderId::new(1), 1, OrderSide::Ask, 10, 10);
-        let mut bid =
-            Order::new_limit(OrderId::new(2), 1, OrderSide::Bid, 10, 5);
+        let mut ask = Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
+        let mut bid = Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 5);
 
         assert!(ask.trade(&mut bid).is_some());
 
