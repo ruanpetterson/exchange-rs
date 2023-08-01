@@ -19,7 +19,26 @@ OPTIONS:
 You can run:
 
 ```shell 
-cargo run --release -- < orders.json
+cargo r --release --bin generator | cargo r --release
+```
+
+The expected result is:
+
+```
+    Finished release [optimized] target(s) in 0.22s
+     Running `target/release/orderbook`
+    Finished release [optimized] target(s) in 0.24s
+     Running `target/release/generator`
+       Total 10000000 order(s) in 14.33s
+     Average 697990.94 orders/s
+
+ Orderbook info 
+    Spread
+     Ask 569000
+     Bid 530100
+    Length
+     Ask 1086869
+     Bid 1086200
 ```
 
 Example JSON:

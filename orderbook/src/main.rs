@@ -1,13 +1,15 @@
-use std::io::Read;
-use std::io::Result;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::path::PathBuf;
+use std::sync::mpsc;
 use std::time::Instant;
 
+use anyhow::Result;
 use clap::Parser;
 use compact_str::CompactString;
 use orderbook_core::ExchangeExt;
 use orderbook_rt::Engine;
-use orderbook_types::OrderRequest;
+use owo_colors::OwoColorize;
 
 #[derive(Parser)]
 #[clap(author, version, about)]
@@ -28,21 +30,45 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let content = match &args.input.unwrap_or_default() {
-        Input::File(path) => std::fs::read_to_string(path)?,
-        Input::Stdin => {
-            let mut buffer = String::new();
-            std::io::stdin().read_to_string(&mut buffer)?;
-            buffer
+    let (tx, rx) = mpsc::sync_channel(65_536);
+
+    std::thread::spawn(move || -> Result<()> {
+        let mut buf_read: Box<dyn BufRead> =
+            match &args.input.unwrap_or_default() {
+                Input::File(path) => {
+                    let file = std::fs::File::open(path)?;
+                    Box::new(BufReader::new(file))
+                }
+                Input::Stdin => {
+                    let stdin = std::io::stdin();
+                    Box::new(BufReader::new(stdin))
+                }
+            };
+
+        let mut buf = String::with_capacity(4096);
+        while let Ok(_) = buf_read.read_line(&mut buf) {
+            let order = serde_json::from_str(&buf);
+            buf.clear();
+            match order {
+                Err(error) => {
+                    if error.is_eof() {
+                        break;
+                    }
+
+                    eprintln!("{error}");
+                }
+                Ok(order) => tx.send(order)?,
+            }
         }
-    };
-    let orders: Vec<OrderRequest> = serde_json::from_str(&content)?;
+
+        Ok(())
+    });
 
     let mut engine = Engine::new(&args.pair);
 
     let mut i = 0.0f64;
     let begin = Instant::now();
-    for order in orders {
+    while let Ok(order) = rx.recv() {
         if let Err(err) = engine.process(order) {
             eprintln!("something went wrong: {}", err);
         };
@@ -53,19 +79,27 @@ fn main() -> Result<()> {
     let elapsed = end - begin;
     let (ask_length, bid_length) = engine.orderbook().len();
 
-    eprintln!("Elapsed time: {:.2}s", elapsed.as_secs_f64());
-    eprintln!("Total:        {}", i.round() as i64);
-    eprintln!("Average:      {:.2} orders/s", i / elapsed.as_secs_f64());
+    eprintln!(
+        "{:>12} {} order(s) in {:.2}s",
+        "Total".bold().green(),
+        i.round() as i64,
+        elapsed.as_secs_f64(),
+    );
+    eprintln!(
+        "{:>12} {:.2} orders/s",
+        "Average".bold().green(),
+        i / elapsed.as_secs_f64(),
+    );
     eprintln!();
-    eprintln!("Orderbook infos:");
+    eprintln!("{}", " Orderbook info ".bold().white().on_black());
     if let Some((ask_price, bid_price)) = engine.orderbook().spread() {
-        eprintln!("  Spread:");
-        eprintln!("    Ask: {}", ask_price);
-        eprintln!("    Bid: {}", bid_price);
+        eprintln!("{}", "    Spread".bold());
+        eprintln!("{:>8} {}", "Ask".bold().green(), ask_price);
+        eprintln!("{:>8} {}", "Bid".bold().green(), bid_price);
     }
-    eprintln!("  Length:");
-    eprintln!("    Ask: {}", ask_length);
-    eprintln!("    Bid: {}", bid_length);
+    eprintln!("{}", "    Length".bold());
+    eprintln!("{:>8} {}", "Ask".bold().green(), ask_length);
+    eprintln!("{:>8} {}", "Bid".bold().green(), bid_length);
 
     match &args.output.unwrap_or_default() {
         Output::Stdout => {
