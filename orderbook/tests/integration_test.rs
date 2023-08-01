@@ -1,7 +1,6 @@
 use once_cell::sync::Lazy;
 use orderbook_core::Asset;
-
-use crate::engine::{Order, Orderbook, Trade};
+use orderbook_types::{Order, Orderbook, Trade};
 
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
     let input = include_str!("./mock_orders.json");
@@ -35,7 +34,7 @@ fn taker_advantage_for_ask() {
 
     let trade = ask.trade(&mut bid).expect("a sucessful trade");
     assert_eq!(
-        trade.price,
+        trade.price(),
         ask.limit_price().unwrap().max(bid.limit_price().unwrap())
     );
 }
@@ -47,7 +46,7 @@ fn taker_advantage_for_bid() {
 
     let trade = bid.trade(&mut ask).expect("a sucessful trade");
     assert_eq!(
-        trade.price,
+        trade.price(),
         ask.limit_price().unwrap().min(bid.limit_price().unwrap())
     );
 }

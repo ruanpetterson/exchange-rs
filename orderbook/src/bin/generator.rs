@@ -2,8 +2,8 @@ use std::path::Path;
 use std::{fs::File, io::Result};
 
 use compact_str::{format_compact, CompactString};
-use orderbook::engine::OrderRequest;
 use orderbook_core::OrderSide;
+use orderbook_types::OrderRequest;
 use rand::Rng;
 
 const N: usize = 7_500_000;
