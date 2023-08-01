@@ -3,26 +3,6 @@ use thiserror::Error;
 
 use super::{Order, OrderId};
 
-#[derive(Debug, Error)]
-pub enum TradeError {
-    #[error(transparent)]
-    PriceError(#[from] PriceError),
-    #[error(transparent)]
-    SideError(#[from] SideError),
-}
-
-#[derive(Debug, Error)]
-pub enum SideError {
-    #[error("taker and maker must be at opposite sides")]
-    Mismatch,
-}
-
-#[derive(Debug, Error)]
-pub enum PriceError {
-    #[error("prices do not match each other")]
-    Mismatch,
-}
-
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -40,7 +20,7 @@ impl Trade {
         maker: &mut Order,
     ) -> Result<Trade, TradeError> {
         if !taker.matches(maker) {
-            return Err(TradeError::PriceError(PriceError::Mismatch));
+            Err(PriceError::Incompatible)?;
         }
 
         let exchanged = taker.remaining().min(maker.remaining());
@@ -57,4 +37,24 @@ impl Trade {
             price,
         })
     }
+}
+
+#[derive(Debug, Error)]
+pub enum TradeError {
+    #[error(transparent)]
+    PriceError(#[from] PriceError),
+    #[error(transparent)]
+    SideError(#[from] SideError),
+}
+
+#[derive(Debug, Error)]
+pub enum SideError {
+    #[error("taker and maker must be at opposite sides")]
+    Conflict,
+}
+
+#[derive(Debug, Error)]
+pub enum PriceError {
+    #[error("prices do not match each other")]
+    Incompatible,
 }
