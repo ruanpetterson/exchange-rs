@@ -3,13 +3,10 @@ use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use compact_str::CompactString;
 use indexmap::IndexMap;
 use orderbook_core::{Asset, Exchange, ExchangeExt, OrderSide};
 
 pub struct Orderbook<Order: Asset, Trade> {
-    #[allow(dead_code)]
-    pair: CompactString,
     orders: IndexMap<<Order as Asset>::OrderId, Order>,
     ask: BTreeMap<
         <Order as Asset>::OrderPrice,
@@ -27,9 +24,8 @@ where
     Order: Asset,
 {
     #[inline]
-    pub fn new(pair: &str) -> Self {
+    pub fn new() -> Self {
         Self {
-            pair: CompactString::new_inline(pair),
             orders: IndexMap::new(),
             ask: BTreeMap::new(),
             bid: BTreeMap::new(),

@@ -1,10 +1,8 @@
-use compact_str::CompactString;
 use once_cell::sync::Lazy;
 use orderbook_core::Asset;
 
 use crate::engine::{Order, Orderbook, Trade};
 
-static PAIR: CompactString = CompactString::new_inline("BTC/USDC");
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
     let input = include_str!("./mock_orders.json");
     serde_json::from_str(input).expect("a set of valid orders")
@@ -56,5 +54,5 @@ fn taker_advantage_for_bid() {
 
 #[test]
 fn orderbook() {
-    let mut _orderbook = Orderbook::<Order, Trade>::new(&PAIR);
+    let mut _orderbook = Orderbook::<Order, Trade>::new();
 }
