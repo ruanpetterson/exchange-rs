@@ -43,7 +43,9 @@ fn main() -> Result<()> {
     let mut i = 0.0f64;
     let begin = Instant::now();
     for order in orders {
-        engine.process(order);
+        if let Err(err) = engine.process(order) {
+            eprintln!("something went wrong: {}", err);
+        };
         i += 1.0;
     }
     let end = Instant::now();
