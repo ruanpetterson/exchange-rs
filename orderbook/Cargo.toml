@@ -14,6 +14,7 @@ orderbook-core = { path = "../orderbook-core" }
 orderbook-rt = { path = "../orderbook-rt" }
 orderbook-types = { path = "../orderbook-types" }
 
+anyhow = "~1.0"
 clap = { version = "3.2.23", features = ["clap_derive", "derive"] }
 compact_str = { version = "0.7.1", features = ["serde"] }
 rand = "0.8.5"
@@ -21,6 +22,7 @@ rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }
 serde_json = { version = "~1.0", optional = true }
 thiserror = "~1.0"
+owo-colors = "3.5.0"
 
 [dev-dependencies]
 once_cell = "~1.18"
