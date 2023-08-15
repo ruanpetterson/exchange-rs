@@ -47,7 +47,8 @@ where
 
         // Define order policies to be run before matching and apply them.
         let before_policies: &[&dyn Policy<E::Order, E>] =
-            &[&PostOnly, &AllOrNone];
+            &[&AllOrNone, &PostOnly];
+
         before_policies
             .iter()
             .for_each(|policy| policy.enforce(&mut incoming_order, self));
@@ -73,6 +74,7 @@ where
 
         // Define order policies to be run after matching and apply them.
         let late_policies: &[&dyn Policy<E::Order, E>] = &[&ImmediateOrCancel];
+
         late_policies
             .iter()
             .for_each(|policy| policy.enforce(&mut incoming_order, self));
@@ -94,10 +96,21 @@ mod policy {
     use super::*;
 
     pub(super) struct AllOrNone;
-    impl<E: Exchange> Policy<E::Order, E> for AllOrNone {
+    impl<E: Exchange + ExchangeExt> Policy<E::Order, E> for AllOrNone {
         #[inline]
-        fn enforce(&self, _incoming_order: &mut E::Order, _exchange: &E) {
-            // TODO
+        fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
+            if incoming_order.is_all_or_none()
+                && incoming_order.remaining()
+                    > exchange.volume_with(
+                        incoming_order.side().opposite(),
+                        |order| order.matches(&incoming_order),
+                    )
+            {
+                // The exchange should possess a sufficient number of orders to
+                // execute an all-or-none order; otherwise, the all-or-none
+                // order must be cancelled.
+                incoming_order.cancel();
+            }
         }
     }
 
@@ -121,9 +134,9 @@ mod policy {
     impl<E: Exchange> Policy<E::Order, E> for ImmediateOrCancel {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, _: &E) {
-            // If incoming order is immediate or cancel, it must be closed at
-            // the end of matching.
             if incoming_order.is_immediate_or_cancel() {
+                // If incoming order is immediate or cancel, it must be closed
+                // at the end of matching.
                 incoming_order.cancel();
             }
         }

@@ -2,6 +2,8 @@ use crate::Asset;
 
 pub type Spread<Order> =
     (<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice);
+pub type Volume<Order> =
+    (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount);
 
 /// An interface for dealing with exchange.
 ///
@@ -50,4 +52,12 @@ pub trait ExchangeExt: Exchange {
     fn is_empty(&self) -> bool {
         self.len() == (0, 0)
     }
+
+    fn volume(&self) -> Volume<Self::Order>;
+
+    fn volume_with(
+        &self,
+        side: <Self::Order as Asset>::OrderSide,
+        predicate: impl FnMut(&Self::Order) -> bool,
+    ) -> <Self::Order as Asset>::OrderAmount;
 }

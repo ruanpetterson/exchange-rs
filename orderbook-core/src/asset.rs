@@ -1,6 +1,10 @@
+use std::ops::Add;
+
+use num::Zero;
+
 pub trait Asset<Order = Self>: PartialOrd {
     /// Order amount.
-    type OrderAmount: Copy + Ord;
+    type OrderAmount: Add<Output = Self::OrderAmount> + Copy + Ord + Zero;
     /// Order unique identifier.
     type OrderId: Copy + Eq;
     /// Order price.
@@ -21,6 +25,7 @@ pub trait Asset<Order = Self>: PartialOrd {
     fn remaining(&self) -> Self::OrderAmount;
     /// Return current order status.
     fn status(&self) -> Self::OrderStatus;
+    fn is_all_or_none(&self) -> bool;
     fn is_closed(&self) -> bool;
     fn is_immediate_or_cancel(&self) -> bool;
     fn is_post_only(&self) -> bool;

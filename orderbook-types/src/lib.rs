@@ -11,7 +11,7 @@ mod order_status;
 pub use order_status::OrderStatus;
 
 mod order_type;
-pub use order_type::OrderType;
+pub use order_type::{OrderType, TimeInForce};
 
 mod orderbook;
 pub use orderbook::*;
