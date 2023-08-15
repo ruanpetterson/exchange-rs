@@ -5,6 +5,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use indexmap::IndexMap;
+use num::Zero;
 use orderbook_core::{Asset, Exchange, ExchangeExt, OrderSide};
 
 pub struct Orderbook<Order: Asset, Trade> {
@@ -200,6 +201,57 @@ where
             self.peek(&OrderSide::Ask)?.limit_price()?,
             self.peek(&OrderSide::Bid)?.limit_price()?,
         ))
+    }
+
+    fn volume(
+        &self,
+    ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
+        let ask = self
+            .ask
+            .values()
+            .flat_map(|level| level.iter())
+            .filter_map(|order_id| self.orders.get(order_id))
+            .map(|order| order.remaining())
+            .reduce(|acc, curr| acc + curr)
+            .unwrap_or(Order::OrderAmount::zero());
+
+        let bid = self
+            .bid
+            .values()
+            .flat_map(|level| level.iter())
+            .filter_map(|order_id| self.orders.get(order_id))
+            .map(|order| order.remaining())
+            .reduce(|acc, curr| acc + curr)
+            .unwrap_or(Order::OrderAmount::zero());
+
+        (ask, bid)
+    }
+
+    fn volume_with(
+        &self,
+        side: <Self::Order as Asset>::OrderSide,
+        mut predicate: impl FnMut(&Self::Order) -> bool,
+    ) -> <Order as Asset>::OrderAmount {
+        match side {
+            OrderSide::Ask => self
+                .ask
+                .values()
+                .flat_map(|level| level.iter())
+                .filter_map(|order_id| self.orders.get(order_id))
+                .take_while(|order| predicate(&**order))
+                .map(|order| order.remaining())
+                .reduce(|acc, curr| acc + curr)
+                .unwrap_or(Order::OrderAmount::zero()),
+            OrderSide::Bid => self
+                .bid
+                .values()
+                .flat_map(|level| level.iter())
+                .filter_map(|order_id| self.orders.get(order_id))
+                .take_while(|order| predicate(&**order))
+                .map(|order| order.remaining())
+                .reduce(|acc, curr| acc + curr)
+                .unwrap_or(Order::OrderAmount::zero()),
+        }
     }
 
     fn len(&self) -> (usize, usize) {

@@ -21,7 +21,13 @@ pub enum OrderType {
     /// amounts of bitcoin or fiat without having to specify the price. Market
     /// orders execute immediately and no part of the market order will go on
     /// the open order book.
-    Market,
+    Market {
+        /// The `all or none` flag indicates that the orders are rejected if
+        /// the entire size cannot be matched. When this is `true`, the order
+        /// is considered a fill or kill order.
+        #[cfg_attr(feature = "serde", serde(default))]
+        all_or_none: bool,
+    },
 }
 
 /// Time in force policies provide guarantees about the lifetime of an
@@ -49,7 +55,16 @@ pub enum TimeInForce {
     /// An order will try to fill the order as much as it can before the order
     /// expires.
     #[cfg_attr(feature = "serde", serde(rename = "IOC"))]
-    ImmediateOrCancel,
+    ImmediateOrCancel {
+        /// The `all-or-none` flag indicates that the orders are rejected if
+        /// the entire size cannot be matched. When this is `true`, the order
+        /// is considered a fill or kill order.
+        #[cfg_attr(
+            feature = "serde",
+            serde(default, skip_serializing_if = "core::ops::Not::not")
+        )]
+        all_or_none: bool,
+    },
 }
 
 impl Default for TimeInForce {

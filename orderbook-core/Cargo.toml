@@ -8,4 +8,5 @@ default = ["serde"]
 serde = ["dep:serde"]
 
 [dependencies]
+num = "0.4.1"
 serde = { version = "~1.0", features = ["derive"], optional = true }

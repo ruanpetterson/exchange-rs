@@ -174,6 +174,18 @@ impl Asset for Order {
     }
 
     #[inline]
+    fn is_all_or_none(&self) -> bool {
+        match self.type_ {
+            OrderType::Market { all_or_none }
+            | OrderType::Limit {
+                time_in_force: TimeInForce::ImmediateOrCancel { all_or_none },
+                ..
+            } => all_or_none,
+            _ => false,
+        }
+    }
+
+    #[inline]
     fn is_closed(&self) -> bool {
         matches!(
             self.status(),
@@ -218,10 +230,12 @@ impl Asset for Order {
 
         match (taker.side(), maker.side()) {
             (OrderSide::Ask, OrderSide::Bid) => {
-                matches!(taker.type_, OrderType::Market) || taker <= maker
+                matches!(taker.type_, OrderType::Market { .. })
+                    || taker <= maker
             }
             (OrderSide::Bid, OrderSide::Ask) => {
-                matches!(taker.type_, OrderType::Market) || taker >= maker
+                matches!(taker.type_, OrderType::Market { .. })
+                    || taker >= maker
             }
             _ => false,
         }
