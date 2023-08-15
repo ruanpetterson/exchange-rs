@@ -5,6 +5,7 @@ use std::ops::{Deref, DerefMut};
 use orderbook_core::{Asset, OrderSide};
 use thiserror::Error;
 
+use crate::order_type::TimeInForce;
 use crate::{OrderId, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
@@ -58,7 +59,7 @@ impl Order {
             side,
             type_: OrderType::Limit {
                 limit_price,
-                post_only: false,
+                time_in_force: Default::default(),
             },
             amount,
             filled: 0,
@@ -184,12 +185,18 @@ impl Asset for Order {
 
     #[inline]
     fn is_immediate_or_cancel(&self) -> bool {
-        matches!(self.type_, OrderType::Market)
+        matches!(
+            self.type_,
+            OrderType::Limit {
+                time_in_force: TimeInForce::ImmediateOrCancel { .. },
+                ..
+            } | OrderType::Market { .. }
+        )
     }
 
     #[inline]
     fn is_post_only(&self) -> bool {
-        matches!(self.type_, OrderType::Limit { post_only, .. } if post_only)
+        matches!(self.type_, OrderType::Limit { time_in_force: TimeInForce::GoodTilCancel { post_only }, .. } if post_only)
     }
 
     #[inline]
