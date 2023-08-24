@@ -57,18 +57,17 @@ where
             incoming_order.is_closed(),
             self.peek_mut(&incoming_order.side().opposite()),
         ) {
-            if let Some(_trade) = incoming_order.trade(top_order) {
-                if top_order.is_closed() {
-                    // As long as top order is completed, it can be safely
-                    // removed from orderbook.
-                    self.pop(&incoming_order.side().opposite()).expect(
-                        "Remove top order because it is completed already.",
-                    );
-                }
-            } else {
-                // Since incoming order is not matching to top order
-                // anymore, we can move on.
+            let Some(_trade) = incoming_order.trade(top_order) else {
+                // Since incoming order is not matching to top order anymore, we
+                // can move on.
                 break;
+            };
+
+            if top_order.is_closed() {
+                // As long as top order is completed, it can be safely removed
+                // from orderbook.
+                self.pop(&incoming_order.side().opposite())
+                    .expect("top order should be `Some`");
             }
         }
 
