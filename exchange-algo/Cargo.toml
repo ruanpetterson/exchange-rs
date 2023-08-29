@@ -1,9 +1,9 @@
 [package]
-name = "orderbook-algo"
+name = "exchange-algo"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-orderbook-core = { path = "../orderbook-core" }
+exchange-core = { path = "../exchange-core" }
 
 thiserror = "~1.0"

@@ -2,9 +2,9 @@
 resolver = "2"
 
 members = [
-    "orderbook",
-    "orderbook-algo",
-    "orderbook-core",
-    "orderbook-rt",
-    "orderbook-types",
+    "exchange",
+    "exchange-algo",
+    "exchange-core",
+    "exchange-rt",
+    "exchange-types",
 ]

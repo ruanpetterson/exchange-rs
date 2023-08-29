@@ -1,18 +1,18 @@
 [package]
-name = "orderbook"
+name = "exchange"
 version = "0.2.0"
 edition = "2021"
-default-run = "orderbook"
+default-run = "exchange"
 
 [features]
 default = ["serde"]
 serde = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
-orderbook-algo = { path = "../orderbook-algo" }
-orderbook-core = { path = "../orderbook-core" }
-orderbook-rt = { path = "../orderbook-rt" }
-orderbook-types = { path = "../orderbook-types" }
+exchange-algo = { path = "../exchange-algo" }
+exchange-core = { path = "../exchange-core" }
+exchange-rt = { path = "../exchange-rt" }
+exchange-types = { path = "../exchange-types" }
 
 anyhow = "~1.0"
 clap = { version = "3.2.23", features = ["clap_derive", "derive"] }

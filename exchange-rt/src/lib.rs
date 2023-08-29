@@ -1,7 +1,7 @@
 use compact_str::CompactString;
-use orderbook_algo::DefaultExchange;
-use orderbook_core::Exchange;
-use orderbook_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
+use exchange_algo::DefaultExchange;
+use exchange_core::Exchange;
+use exchange_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
 use thiserror::Error;
 
 pub struct Engine {

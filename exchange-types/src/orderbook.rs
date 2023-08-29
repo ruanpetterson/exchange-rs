@@ -4,9 +4,9 @@ use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use exchange_core::{Asset, Exchange, ExchangeExt, OrderSide};
 use indexmap::IndexMap;
 use num::Zero;
-use orderbook_core::{Asset, Exchange, ExchangeExt, OrderSide};
 
 pub struct Orderbook<Order: Asset, Trade> {
     orders: IndexMap<<Order as Asset>::OrderId, Order>,

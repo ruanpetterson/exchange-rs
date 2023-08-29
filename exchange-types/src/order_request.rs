@@ -1,5 +1,5 @@
 use compact_str::CompactString;
-use orderbook_core::OrderSide;
+use exchange_core::OrderSide;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use thiserror::Error;
 

@@ -1,6 +1,6 @@
+use exchange_core::Asset;
+use exchange_types::{Order, Orderbook, Trade};
 use once_cell::sync::Lazy;
-use orderbook_core::Asset;
-use orderbook_types::{Order, Orderbook, Trade};
 
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
     let input = include_str!("./mock_orders.json");

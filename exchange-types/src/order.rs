@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
 use std::ops::{Deref, DerefMut};
 
-use orderbook_core::{Asset, OrderSide};
+use exchange_core::{Asset, OrderSide};
 use thiserror::Error;
 
 use crate::order_type::TimeInForce;

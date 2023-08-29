@@ -2,9 +2,9 @@ use compact_str::{format_compact, CompactString};
 use criterion::{
     black_box, criterion_group, criterion_main, BatchSize, Criterion,
 };
-use orderbook_core::OrderSide;
-use orderbook_rt::Engine;
-use orderbook_types::OrderRequest;
+use exchange_core::OrderSide;
+use exchange_rt::Engine;
+use exchange_types::OrderRequest;
 use rand::Rng;
 
 const PAIR: &'static str = "BENCH";

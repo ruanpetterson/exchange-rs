@@ -2,8 +2,8 @@ use std::io;
 use std::io::{Result, Write};
 
 use compact_str::{format_compact, CompactString};
-use orderbook_core::OrderSide;
-use orderbook_types::OrderRequest;
+use exchange_core::OrderSide;
+use exchange_types::OrderRequest;
 use rand::Rng;
 
 const N: usize = 10_000_000;
