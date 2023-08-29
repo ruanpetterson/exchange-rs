@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
-use orderbook_core::Policy;
-use orderbook_core::{Asset, Exchange, ExchangeExt, Opposite};
+use exchange_core::Policy;
+use exchange_core::{Asset, Exchange, ExchangeExt, Opposite};
 use policy::*;
 use thiserror::Error;
 

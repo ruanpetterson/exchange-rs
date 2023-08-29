@@ -1,12 +1,12 @@
 [package]
-name = "orderbook-rt"
+name = "exchange-rt"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-orderbook-algo = { path = "../orderbook-algo" }
-orderbook-core = { path = "../orderbook-core" }
-orderbook-types = { path = "../orderbook-types" }
+exchange-algo = { path = "../exchange-algo" }
+exchange-core = { path = "../exchange-core" }
+exchange-types = { path = "../exchange-types" }
 
 compact_str = { version = "0.7.0", features = ["serde"] }
 rust_decimal = "1.29.1"

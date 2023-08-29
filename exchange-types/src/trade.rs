@@ -1,4 +1,4 @@
-use orderbook_core::Asset;
+use exchange_core::Asset;
 use thiserror::Error;
 
 use super::{Order, OrderId};
