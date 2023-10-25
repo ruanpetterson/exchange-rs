@@ -1,9 +1,8 @@
 use compact_str::CompactString;
-use exchange_core::OrderSide;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use thiserror::Error;
 
-use crate::{Order, OrderId};
+use crate::{Order, OrderId, OrderSide};
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {

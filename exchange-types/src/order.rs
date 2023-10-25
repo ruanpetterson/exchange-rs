@@ -2,11 +2,11 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
 use std::ops::{Deref, DerefMut};
 
-use exchange_core::{Asset, OrderSide};
+use exchange_core::Asset;
 use thiserror::Error;
 
 use crate::order_type::TimeInForce;
-use crate::{OrderId, OrderStatus, OrderType, Trade};
+use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {
@@ -174,7 +174,7 @@ impl Asset for Order {
     }
 
     #[inline]
-    fn is_all_or_none(&self) -> bool {
+    fn is_fill_or_kill(&self) -> bool {
         match self.type_ {
             OrderType::Market { all_or_none }
             | OrderType::Limit {
