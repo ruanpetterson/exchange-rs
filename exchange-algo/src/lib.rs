@@ -98,7 +98,7 @@ mod policy {
     impl<E: Exchange + ExchangeExt> Policy<E::Order, E> for AllOrNone {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
-            if incoming_order.is_all_or_none()
+            if incoming_order.is_fill_or_kill()
                 && incoming_order.remaining()
                     > exchange.volume_with(
                         incoming_order.side().opposite(),

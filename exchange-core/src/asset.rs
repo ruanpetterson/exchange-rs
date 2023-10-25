@@ -25,15 +25,24 @@ pub trait Asset<Order = Self>: PartialOrd {
     fn remaining(&self) -> Self::OrderAmount;
     /// Return current order status.
     fn status(&self) -> Self::OrderStatus;
-    fn is_all_or_none(&self) -> bool;
+    /// Returns `true` if order is fill or -kill.
+    fn is_fill_or_kill(&self) -> bool;
+    /// Returns `true` if order is closed.
     fn is_closed(&self) -> bool;
+    /// Returns `true` if order is immediate or cancel.
     fn is_immediate_or_cancel(&self) -> bool;
+    /// Returns `true` if order is post-only.
     fn is_post_only(&self) -> bool;
-    fn trade(&mut self, order: &mut Order) -> Option<Self::Trade>;
-    fn matches(&self, order: &Order) -> bool;
+    /// Returns `true` if orders match.
+    fn matches(&self, other: &Order) -> bool;
+    /// Execute a trade.
+    fn trade(&mut self, other: &mut Order) -> Option<Self::Trade>;
+    /// Cancel the order.
     fn cancel(&mut self);
 }
 
+/// The logical opposite of a value.
 pub trait Opposite<Opposite = Self> {
+    /// Returns the opposite value.
     fn opposite(&self) -> Opposite;
 }

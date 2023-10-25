@@ -174,7 +174,7 @@ impl Asset for Order {
     }
 
     #[inline]
-    fn is_all_or_none(&self) -> bool {
+    fn is_fill_or_kill(&self) -> bool {
         match self.type_ {
             OrderType::Market { all_or_none }
             | OrderType::Limit {
