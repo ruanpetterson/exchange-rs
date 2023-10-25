@@ -2,11 +2,11 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
 use std::ops::{Deref, DerefMut};
 
-use exchange_core::{Asset, OrderSide};
+use exchange_core::Asset;
 use thiserror::Error;
 
 use crate::order_type::TimeInForce;
-use crate::{OrderId, OrderStatus, OrderType, Trade};
+use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {
