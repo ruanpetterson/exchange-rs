@@ -8,3 +8,6 @@ members = [
     "exchange-rt",
     "exchange-types",
 ]
+
+[profile.release]
+strip = true

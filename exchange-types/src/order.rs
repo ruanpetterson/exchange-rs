@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
-use std::ops::{Deref, DerefMut};
+use std::ops::AddAssign;
 
 use exchange_core::Asset;
 use thiserror::Error;
@@ -10,10 +10,10 @@ use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
 pub enum OrderError {
-    #[error("fill exceeds remaning amount")]
+    #[error("filling amount exceeds remaining amount")]
     Overfill,
-    #[error("sides mismatch")]
-    MismatchSide,
+    #[error("empty filling is not allowed")]
+    NoFill,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -23,26 +23,16 @@ pub struct Order {
     side: OrderSide,
     #[cfg_attr(feature = "serde", serde(flatten))]
     type_: OrderType,
-    amount: u64,
-    #[cfg_attr(feature = "serde", serde(default))]
-    filled: u64,
     status: OrderStatus,
 }
 
 impl Order {
     #[inline]
-    pub fn new(
-        id: OrderId,
-        side: OrderSide,
-        type_: OrderType,
-        amount: u64,
-    ) -> Self {
+    pub fn new(id: OrderId, side: OrderSide, type_: OrderType) -> Self {
         Self {
             id,
             side,
             type_,
-            amount,
-            filled: 0,
             status: OrderStatus::Open,
         }
     }
@@ -60,9 +50,9 @@ impl Order {
             type_: OrderType::Limit {
                 limit_price,
                 time_in_force: Default::default(),
+                amount,
+                filled: 0,
             },
-            amount,
-            filled: 0,
             status: OrderStatus::Open,
         }
     }
@@ -82,12 +72,18 @@ impl Order {
     ///
     /// # Safety
     ///
-    /// This results in undefined behavior when current `Order::filled`
-    /// overflows `Order::amount`.
+    /// This results in an unreliable state when current `Order::filled`
+    /// overflows `Order::amount` or given amount is zero.
     #[inline]
     pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
-        self.filled += amount;
-        self.status = if self.filled == self.amount {
+        let filled = match self.type_ {
+            OrderType::Limit { ref mut filled, .. }
+            | OrderType::Market { ref mut filled, .. } => filled,
+        };
+
+        filled.add_assign(amount);
+
+        self.status = if self.remaining() == 0 {
             OrderStatus::Completed
         } else {
             OrderStatus::Partial
@@ -98,11 +94,15 @@ impl Order {
     /// something fails.
     #[inline]
     pub(crate) fn try_fill(&mut self, amount: u64) -> Result<(), OrderError> {
+        if amount == 0 {
+            return Err(OrderError::NoFill);
+        }
+
         if amount > self.remaining() {
             return Err(OrderError::Overfill);
         }
 
-        // SAFETY: we already checked that `remaining >= amount`.
+        // SAFETY: we already guarantee that `remaining >= amount > 0`.
         unsafe { self.fill_unchecked(amount) };
 
         Ok(())
@@ -165,7 +165,10 @@ impl Asset for Order {
 
     #[inline]
     fn remaining(&self) -> Self::OrderAmount {
-        self.amount - self.filled
+        match self.type_ {
+            OrderType::Limit { amount, filled, .. }
+            | OrderType::Market { amount, filled, .. } => amount - filled,
+        }
     }
 
     #[inline]
@@ -176,7 +179,7 @@ impl Asset for Order {
     #[inline]
     fn is_fill_or_kill(&self) -> bool {
         match self.type_ {
-            OrderType::Market { all_or_none }
+            OrderType::Market { all_or_none, .. }
             | OrderType::Limit {
                 time_in_force: TimeInForce::ImmediateOrCancel { all_or_none },
                 ..
@@ -251,129 +254,9 @@ impl Asset for Order {
     }
 }
 
-#[repr(transparent)]
-#[derive(Debug, PartialEq, Eq, PartialOrd)]
-pub struct AskOrder(Order);
-
-#[repr(transparent)]
-#[derive(Debug, PartialEq, Eq, PartialOrd)]
-pub struct BidOrder(Order);
-
-impl TryFrom<Order> for AskOrder {
-    type Error = OrderError;
-
-    #[inline]
-    fn try_from(order: Order) -> Result<Self, Self::Error> {
-        order
-            .side()
-            .eq(&OrderSide::Ask)
-            .then_some(Self(order))
-            .ok_or(OrderError::MismatchSide)
-    }
-}
-
-impl TryFrom<Order> for BidOrder {
-    type Error = OrderError;
-
-    #[inline]
-    fn try_from(order: Order) -> Result<Self, Self::Error> {
-        order
-            .side()
-            .eq(&OrderSide::Bid)
-            .then_some(Self(order))
-            .ok_or(OrderError::MismatchSide)
-    }
-}
-
-impl From<AskOrder> for Order {
-    #[inline]
-    fn from(order: AskOrder) -> Self {
-        order.0
-    }
-}
-
-impl From<BidOrder> for Order {
-    #[inline]
-    fn from(order: BidOrder) -> Self {
-        order.0
-    }
-}
-
-impl Deref for AskOrder {
-    type Target = Order;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for AskOrder {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl Deref for BidOrder {
-    type Target = Order;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for BidOrder {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn try_into_ask() {
-        let ask_orders = [OrderSide::Ask, OrderSide::Bid]
-            .into_iter()
-            .enumerate()
-            .filter_map(|(id, side)| {
-                Order::new_limit(OrderId::new(id as u64), side, 100, 100)
-                    .try_into()
-                    .ok()
-            })
-            .collect::<Vec<AskOrder>>();
-        assert_eq!(ask_orders.len(), 1);
-
-        let orders = ask_orders
-            .into_iter()
-            .map(|order| order.into())
-            .collect::<Vec<Order>>();
-        assert_eq!(orders.len(), 1);
-    }
-
-    #[test]
-    fn try_into_bid() {
-        let bid_orders = [OrderSide::Ask, OrderSide::Bid]
-            .into_iter()
-            .enumerate()
-            .filter_map(|(id, side)| {
-                Order::new_limit(OrderId::new(id as u64), side, 100, 100)
-                    .try_into()
-                    .ok()
-            })
-            .collect::<Vec<BidOrder>>();
-        assert_eq!(bid_orders.len(), 1);
-
-        let orders = bid_orders
-            .into_iter()
-            .map(|order| order.into())
-            .collect::<Vec<Order>>();
-        assert_eq!(orders.len(), 1);
-    }
 
     mod valid_trades {
         use super::*;
