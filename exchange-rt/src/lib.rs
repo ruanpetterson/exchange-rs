@@ -1,12 +1,11 @@
 use compact_str::CompactString;
-use exchange_algo::DefaultExchange;
 use exchange_core::Exchange;
 use exchange_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
 use thiserror::Error;
 
 pub struct Engine {
     pair: CompactString,
-    orderbook: DefaultExchange<Orderbook<Order, Trade>>,
+    orderbook: Orderbook<Order, Trade>,
 }
 
 impl Engine {
