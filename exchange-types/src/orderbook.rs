@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use exchange_algo::DefaultExchange;
 use exchange_core::{Asset, Exchange, ExchangeExt};
 use indexmap::IndexMap;
 use num::Zero;
@@ -54,6 +55,7 @@ where
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
+    type Algo = DefaultExchange;
     type Order = Order;
 
     #[inline]
