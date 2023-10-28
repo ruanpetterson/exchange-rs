@@ -1,6 +1,5 @@
 use exchange_core::{Algo, Policy};
 use exchange_core::{Asset, Exchange, ExchangeExt, Opposite};
-use policy::*;
 use thiserror::Error;
 
 pub struct DefaultExchange;
@@ -16,11 +15,7 @@ impl Algo for DefaultExchange {
     ) -> Result<(), DefaultExchangeError> {
         let mut incoming_order = order;
 
-        // Define order policies to be run before matching and apply them.
-        let before_policies: &[&dyn Policy<E::Order, E>] =
-            &[&AllOrNone, &PostOnly];
-
-        before_policies
+        policy::before_policies()
             .iter()
             .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
 
@@ -43,10 +38,7 @@ impl Algo for DefaultExchange {
             }
         }
 
-        // Define order policies to be run after matching and apply them.
-        let late_policies: &[&dyn Policy<E::Order, E>] = &[&ImmediateOrCancel];
-
-        late_policies
+        policy::late_policies()
             .iter()
             .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
 
@@ -67,7 +59,19 @@ pub enum DefaultExchangeError {}
 mod policy {
     use super::*;
 
-    pub(super) struct AllOrNone;
+    /// Policies that should be run before matching.
+    pub(super) const fn before_policies<'e, E: Exchange + ExchangeExt + 'e>(
+    ) -> &'e [&'e dyn Policy<E::Order, E>] {
+        &[&AllOrNone, &PostOnly]
+    }
+
+    /// Policies that should be run after matching.
+    pub(super) const fn late_policies<'e, E: Exchange + ExchangeExt + 'e>(
+    ) -> &'e [&'e dyn Policy<E::Order, E>] {
+        &[&ImmediateOrCancel]
+    }
+
+    struct AllOrNone;
     impl<E: Exchange + ExchangeExt> Policy<E::Order, E> for AllOrNone {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
@@ -75,7 +79,7 @@ mod policy {
                 && incoming_order.remaining()
                     > exchange.volume_with(
                         incoming_order.side().opposite(),
-                        |order| order.matches(&incoming_order),
+                        |order| order.matches(incoming_order),
                     )
             {
                 // The exchange should possess a sufficient number of orders to
@@ -86,7 +90,7 @@ mod policy {
         }
     }
 
-    pub(super) struct PostOnly;
+    struct PostOnly;
     impl<E: Exchange> Policy<E::Order, E> for PostOnly {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
@@ -102,7 +106,7 @@ mod policy {
         }
     }
 
-    pub(super) struct ImmediateOrCancel;
+    struct ImmediateOrCancel;
     impl<E: Exchange> Policy<E::Order, E> for ImmediateOrCancel {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, _: &E) {
