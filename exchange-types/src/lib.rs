@@ -1,5 +1,5 @@
 mod order;
-pub use order::{AskOrder, BidOrder, Order};
+pub use order::Order;
 
 mod order_id;
 pub use order_id::OrderId;
