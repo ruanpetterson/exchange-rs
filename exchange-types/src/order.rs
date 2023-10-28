@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
-use std::ops::{Deref, DerefMut};
+use std::ops::{AddAssign, Deref, DerefMut};
 
 use exchange_core::Asset;
 use thiserror::Error;
@@ -23,26 +23,16 @@ pub struct Order {
     side: OrderSide,
     #[cfg_attr(feature = "serde", serde(flatten))]
     type_: OrderType,
-    amount: u64,
-    #[cfg_attr(feature = "serde", serde(default))]
-    filled: u64,
     status: OrderStatus,
 }
 
 impl Order {
     #[inline]
-    pub fn new(
-        id: OrderId,
-        side: OrderSide,
-        type_: OrderType,
-        amount: u64,
-    ) -> Self {
+    pub fn new(id: OrderId, side: OrderSide, type_: OrderType) -> Self {
         Self {
             id,
             side,
             type_,
-            amount,
-            filled: 0,
             status: OrderStatus::Open,
         }
     }
@@ -60,9 +50,9 @@ impl Order {
             type_: OrderType::Limit {
                 limit_price,
                 time_in_force: Default::default(),
+                amount,
+                filled: 0,
             },
-            amount,
-            filled: 0,
             status: OrderStatus::Open,
         }
     }
@@ -86,8 +76,14 @@ impl Order {
     /// overflows `Order::amount`.
     #[inline]
     pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
-        self.filled += amount;
-        self.status = if self.filled == self.amount {
+        let filled = match self.type_ {
+            OrderType::Limit { ref mut filled, .. }
+            | OrderType::Market { ref mut filled, .. } => filled,
+        };
+
+        filled.add_assign(amount);
+
+        self.status = if &amount == filled {
             OrderStatus::Completed
         } else {
             OrderStatus::Partial
@@ -165,7 +161,10 @@ impl Asset for Order {
 
     #[inline]
     fn remaining(&self) -> Self::OrderAmount {
-        self.amount - self.filled
+        match self.type_ {
+            OrderType::Limit { amount, filled, .. }
+            | OrderType::Market { amount, filled, .. } => amount - filled,
+        }
     }
 
     #[inline]
@@ -176,7 +175,7 @@ impl Asset for Order {
     #[inline]
     fn is_fill_or_kill(&self) -> bool {
         match self.type_ {
-            OrderType::Market { all_or_none }
+            OrderType::Market { all_or_none, .. }
             | OrderType::Limit {
                 time_in_force: TimeInForce::ImmediateOrCancel { all_or_none },
                 ..

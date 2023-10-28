@@ -22,8 +22,9 @@ fn valid_match() {
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: true,
                 },
+                amount: 100,
+                filled: 0,
             },
-            100,
         )
     });
 
@@ -48,8 +49,9 @@ fn invalid_match() {
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: true,
                 },
+                amount: 100,
+                filled: 0,
             },
-            100,
         )
     });
 
