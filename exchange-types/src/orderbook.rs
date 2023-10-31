@@ -1,4 +1,3 @@
-use std::cmp::Reverse;
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
@@ -18,7 +17,7 @@ pub struct Orderbook<Order: Asset, Trade> {
         VecDeque<<Order as Asset>::OrderId>,
     >,
     bid: BTreeMap<
-        Reverse<<Order as Asset>::OrderPrice>,
+        <Order as Asset>::OrderPrice,
         VecDeque<<Order as Asset>::OrderId>,
     >,
     _trade: PhantomData<Trade>,
@@ -58,6 +57,31 @@ where
     type Algo = DefaultExchange;
     type Order = Order;
 
+    fn iter(
+        &self,
+        side: &<Self::Order as Asset>::OrderSide,
+    ) -> impl Iterator<Item = &Self::Order> {
+        let order_id_to_order =
+            |order_id: &<Order as Asset>::OrderId| -> &Order {
+                self.orders
+                    .get(order_id)
+                    .expect("every order in tree must algo be in index")
+            };
+
+        match side {
+            OrderSide::Ask => self
+                .ask
+                .values()
+                .flat_map(VecDeque::iter)
+                .map(order_id_to_order),
+            OrderSide::Bid => self
+                .bid
+                .values()
+                .flat_map(VecDeque::iter)
+                .map(order_id_to_order),
+        }
+    }
+
     #[inline]
     fn insert(&mut self, order: Self::Order) {
         let level = match order.side() {
@@ -71,11 +95,11 @@ where
                 .or_insert_with(|| VecDeque::with_capacity(8)),
             OrderSide::Bid => self
                 .bid
-                .entry(Reverse(
+                .entry(
                     order
                         .limit_price()
                         .expect("bookable orders must have a limit price"),
-                ))
+                )
                 .or_insert_with(|| VecDeque::with_capacity(8)),
         };
 
@@ -114,8 +138,7 @@ where
                 }
             }
             OrderSide::Bid => {
-                let Entry::Occupied(mut level) =
-                    self.bid.entry(Reverse(limit_price))
+                let Entry::Occupied(mut level) = self.bid.entry(limit_price)
                 else {
                     unreachable!();
                 };
@@ -144,7 +167,7 @@ where
                 self.ask.first_key_value().map(|(_, level)| level)?
             }
             OrderSide::Bid => {
-                self.bid.first_key_value().map(|(_, level)| level)?
+                self.bid.last_key_value().map(|(_, level)| level)?
             }
         }
         .front()
@@ -158,7 +181,7 @@ where
                 self.ask.first_key_value().map(|(_, level)| level)?
             }
             OrderSide::Bid => {
-                self.bid.first_key_value().map(|(_, level)| level)?
+                self.bid.last_key_value().map(|(_, level)| level)?
             }
         }
         .front()
@@ -207,61 +230,28 @@ where
         ))
     }
 
-    fn volume(
-        &self,
-    ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
-        let ask = self
-            .ask
-            .values()
-            .flat_map(|level| level.iter())
-            .filter_map(|order_id| self.orders.get(order_id))
-            .map(|order| order.remaining())
-            .reduce(|acc, curr| acc + curr)
-            .unwrap_or(Order::OrderAmount::zero());
-
-        let bid = self
-            .bid
-            .values()
-            .flat_map(|level| level.iter())
-            .filter_map(|order_id| self.orders.get(order_id))
-            .map(|order| order.remaining())
-            .reduce(|acc, curr| acc + curr)
-            .unwrap_or(Order::OrderAmount::zero());
-
-        (ask, bid)
-    }
-
-    fn volume_with(
-        &self,
-        side: <Self::Order as Asset>::OrderSide,
-        mut predicate: impl FnMut(&Self::Order) -> bool,
-    ) -> <Order as Asset>::OrderAmount {
-        match side {
-            OrderSide::Ask => self
-                .ask
-                .values()
-                .flat_map(|level| level.iter())
-                .filter_map(|order_id| self.orders.get(order_id))
-                .take_while(|order| predicate(&**order))
-                .map(|order| order.remaining())
-                .reduce(|acc, curr| acc + curr)
-                .unwrap_or(Order::OrderAmount::zero()),
-            OrderSide::Bid => self
-                .bid
-                .values()
-                .flat_map(|level| level.iter())
-                .filter_map(|order_id| self.orders.get(order_id))
-                .take_while(|order| predicate(&**order))
-                .map(|order| order.remaining())
-                .reduce(|acc, curr| acc + curr)
-                .unwrap_or(Order::OrderAmount::zero()),
-        }
-    }
-
     fn len(&self) -> (usize, usize) {
         (
             self.ask.iter().fold(0, |acc, (_, level)| acc + level.len()),
             self.bid.iter().fold(0, |acc, (_, level)| acc + level.len()),
         )
+    }
+
+    fn volume(
+        &self,
+    ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
+        let ask = self
+            .iter(&OrderSide::Ask)
+            .map(|order| order.remaining())
+            .reduce(|acc, curr| acc + curr)
+            .unwrap_or(Zero::zero());
+
+        let bid = self
+            .iter(&OrderSide::Bid)
+            .map(|order| order.remaining())
+            .reduce(|acc, curr| acc + curr)
+            .unwrap_or(Zero::zero());
+
+        (ask, bid)
     }
 }

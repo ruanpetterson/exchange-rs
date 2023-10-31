@@ -25,7 +25,7 @@ pub trait Asset<Order = Self>: PartialOrd {
     fn remaining(&self) -> Self::OrderAmount;
     /// Return current order status.
     fn status(&self) -> Self::OrderStatus;
-    /// Returns `true` if order is fill or -kill.
+    /// Returns `true` if order is fill or kill.
     fn is_fill_or_kill(&self) -> bool;
     /// Returns `true` if order is closed.
     fn is_closed(&self) -> bool;

@@ -13,7 +13,7 @@ fn valid_match() {
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let all_or_none = OrderId::new(1).pipe(|order_id| {
+    let fill_or_kill = OrderId::new(1).pipe(|order_id| {
         Order::new(
             order_id,
             OrderSide::Bid,
@@ -28,7 +28,7 @@ fn valid_match() {
         )
     });
 
-    assert!(exchange.matching(all_or_none).is_ok());
+    assert!(exchange.matching(fill_or_kill).is_ok());
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn invalid_match() {
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let all_or_none = OrderId::new(1).pipe(|order_id| {
+    let fill_or_kill = OrderId::new(1).pipe(|order_id| {
         Order::new(
             order_id,
             OrderSide::Bid,
@@ -55,5 +55,5 @@ fn invalid_match() {
         )
     });
 
-    assert!(exchange.matching(all_or_none).is_ok());
+    assert!(exchange.matching(fill_or_kill).is_ok());
 }
