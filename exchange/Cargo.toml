@@ -23,6 +23,7 @@ rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }
 serde_json = { version = "~1.0", optional = true }
 thiserror = "~1.0"
+uuid = { version = "1.5.0", features = ["rand", "v4"] }
 
 [dev-dependencies]
 criterion = "0.5.1"

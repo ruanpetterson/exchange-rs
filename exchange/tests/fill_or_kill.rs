@@ -6,13 +6,13 @@ use tap::{Pipe, Tap};
 #[test]
 fn valid_match() {
     let mut exchange = Orderbook::new().tap_mut(|exchange| {
-        let order_id = OrderId::new(1);
+        let order_id = OrderId::random();
         let limit_order = Order::new_limit(order_id, OrderSide::Ask, 100, 100);
 
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let fill_or_kill = OrderId::new(1).pipe(|order_id| {
+    let fill_or_kill = OrderId::random().pipe(|order_id| {
         Order::new(
             order_id,
             OrderSide::Bid,
@@ -33,13 +33,13 @@ fn valid_match() {
 #[test]
 fn invalid_match() {
     let mut exchange = Orderbook::new().tap_mut(|exchange| {
-        let order_id = OrderId::new(1);
+        let order_id = OrderId::random();
         let limit_order = Order::new_limit(order_id, OrderSide::Ask, 100, 10);
 
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let fill_or_kill = OrderId::new(1).pipe(|order_id| {
+    let fill_or_kill = OrderId::random().pipe(|order_id| {
         Order::new(
             order_id,
             OrderSide::Bid,
