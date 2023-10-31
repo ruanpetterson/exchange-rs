@@ -234,11 +234,11 @@ impl Asset for Order {
         match (taker.side(), maker.side()) {
             (OrderSide::Ask, OrderSide::Bid) => {
                 matches!(taker.type_, OrderType::Market { .. })
-                    || taker <= maker
+                    || taker.limit_price() <= maker.limit_price()
             }
             (OrderSide::Bid, OrderSide::Ask) => {
                 matches!(taker.type_, OrderType::Market { .. })
-                    || taker >= maker
+                    || taker.limit_price() >= maker.limit_price()
             }
             _ => false,
         }
