@@ -1,5 +1,6 @@
 use exchange_core::{Algo, Policy};
 use exchange_core::{Asset, Exchange, ExchangeExt, Opposite};
+use num::Zero;
 use thiserror::Error;
 
 pub struct DefaultExchange;
@@ -62,7 +63,7 @@ mod policy {
     /// Policies that should be run before matching.
     pub(super) const fn before_policies<'e, E: Exchange + ExchangeExt + 'e>(
     ) -> &'e [&'e dyn Policy<E::Order, E>] {
-        &[&AllOrNone, &PostOnly]
+        &[&FillOrKill, &PostOnly]
     }
 
     /// Policies that should be run after matching.
@@ -71,16 +72,21 @@ mod policy {
         &[&ImmediateOrCancel]
     }
 
-    struct AllOrNone;
-    impl<E: Exchange + ExchangeExt> Policy<E::Order, E> for AllOrNone {
+    struct FillOrKill;
+    impl<E: Exchange + ExchangeExt> Policy<E::Order, E> for FillOrKill {
         #[inline]
         fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
+            let peek_all = |incoming_order: &E::Order| {
+                exchange
+                    .iter(&incoming_order.side().opposite())
+                    .take_while(|order| order.matches(&incoming_order))
+                    .map(|order| order.remaining())
+                    .reduce(|curr, acc| curr + acc)
+                    .unwrap_or(Zero::zero())
+            };
+
             if incoming_order.is_fill_or_kill()
-                && incoming_order.remaining()
-                    > exchange.volume_with(
-                        incoming_order.side().opposite(),
-                        |order| order.matches(incoming_order),
-                    )
+                && incoming_order.remaining() >= peek_all(&incoming_order)
             {
                 // The exchange should possess a sufficient number of orders to
                 // execute an all-or-none order; otherwise, the all-or-none

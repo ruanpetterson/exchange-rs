@@ -13,6 +13,12 @@ pub trait Exchange {
     type Algo: Algo;
     type Order: Asset;
 
+    // Returns an iterator over the given side of the exchange.
+    fn iter(
+        &self,
+        side: &<Self::Order as Asset>::OrderSide,
+    ) -> impl Iterator<Item = &Self::Order>;
+
     /// Inserts an order into the exchange.
     fn insert(&mut self, order: Self::Order);
 
@@ -70,10 +76,4 @@ pub trait ExchangeExt: Exchange {
     }
 
     fn volume(&self) -> Volume<Self::Order>;
-
-    fn volume_with(
-        &self,
-        side: <Self::Order as Asset>::OrderSide,
-        predicate: impl FnMut(&Self::Order) -> bool,
-    ) -> <Self::Order as Asset>::OrderAmount;
 }
