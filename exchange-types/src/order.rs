@@ -127,13 +127,7 @@ impl Eq for Order {}
 impl PartialOrd for Order {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let ord = if self.id.eq(&other.id) {
-            Ordering::Equal
-        } else {
-            self.limit_price()?.cmp(&other.limit_price()?)
-        };
-
-        Some(ord)
+        self.limit_price().partial_cmp(&other.limit_price())
     }
 }
 
