@@ -65,7 +65,7 @@ where
             |order_id: &<Order as Asset>::OrderId| -> &Order {
                 self.orders
                     .get(order_id)
-                    .expect("every order in tree must algo be in index")
+                    .expect("every order in tree must also be in index")
             };
 
         match side {
@@ -123,7 +123,9 @@ where
             OrderSide::Ask => {
                 let Entry::Occupied(mut level) = self.ask.entry(limit_price)
                 else {
-                    unreachable!();
+                    unreachable!(
+                        "orders that lives in index must also be in the tree"
+                    );
                 };
 
                 // It prevents dangling levels (level with no orders).
@@ -140,7 +142,9 @@ where
             OrderSide::Bid => {
                 let Entry::Occupied(mut level) = self.bid.entry(limit_price)
                 else {
-                    unreachable!();
+                    unreachable!(
+                        "orders that lives in index must also be in the tree"
+                    );
                 };
 
                 // It prevents dangling levels (level with no orders).
@@ -156,6 +160,11 @@ where
             }
         }
         .expect("indexed orders must be in the book tree");
+
+        assert!(
+            &order.id() == order_id,
+            "order id must be the same; something is wrong otherwise"
+        );
 
         Some(order)
     }
