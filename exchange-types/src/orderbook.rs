@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use either::Either;
 use exchange_algo::DefaultExchange;
 use exchange_core::{Asset, Exchange, ExchangeExt};
 use indexmap::IndexMap;
@@ -69,16 +70,19 @@ where
             };
 
         match side {
-            OrderSide::Ask => self
-                .ask
-                .values()
-                .flat_map(VecDeque::iter)
-                .map(order_id_to_order),
-            OrderSide::Bid => self
-                .bid
-                .values()
-                .flat_map(VecDeque::iter)
-                .map(order_id_to_order),
+            OrderSide::Ask => Either::Left(
+                self.ask
+                    .values()
+                    .flat_map(VecDeque::iter)
+                    .map(order_id_to_order),
+            ),
+            OrderSide::Bid => Either::Right(
+                self.bid
+                    .values()
+                    .rev()
+                    .flat_map(VecDeque::iter)
+                    .map(order_id_to_order),
+            ),
         }
     }
 
