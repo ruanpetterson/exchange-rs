@@ -11,8 +11,10 @@ pub enum OrderSide {
 }
 
 impl Opposite for OrderSide {
+    type Opposite = Self;
+
     #[inline]
-    fn opposite(&self) -> Self {
+    fn opposite(&self) -> Self::Opposite {
         match self {
             OrderSide::Ask => OrderSide::Bid,
             OrderSide::Bid => OrderSide::Ask,

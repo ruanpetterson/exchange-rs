@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Div};
 
 use num::Zero;
 
@@ -8,9 +8,12 @@ pub trait Asset<Order = Self>: PartialOrd {
     /// Order unique identifier.
     type OrderId: Copy + Eq;
     /// Order price.
-    type OrderPrice: Copy + Ord;
+    type OrderPrice: Copy
+        + Div<Self::OrderPrice, Output = Self::OrderAmount>
+        + Ord
+        + Zero;
     /// Order side.
-    type OrderSide: Opposite;
+    type OrderSide: Copy + Eq + Opposite<Opposite = Self::OrderSide>;
     /// Order current status.
     type OrderStatus: Copy + Eq;
     /// Trade struct.
@@ -42,7 +45,8 @@ pub trait Asset<Order = Self>: PartialOrd {
 }
 
 /// The logical opposite of a value.
-pub trait Opposite<Opposite = Self> {
+pub trait Opposite {
+    type Opposite;
     /// Returns the opposite value.
-    fn opposite(&self) -> Opposite;
+    fn opposite(&self) -> Self::Opposite;
 }
