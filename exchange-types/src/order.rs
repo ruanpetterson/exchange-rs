@@ -6,15 +6,8 @@ use exchange_core::Asset;
 use thiserror::Error;
 
 use crate::order_type::TimeInForce;
+use crate::trade::{PriceError, SideError, StatusError, TradeError};
 use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
-
-#[derive(Debug, Error)]
-pub enum OrderError {
-    #[error("filling amount exceeds remaining amount")]
-    Overfill,
-    #[error("empty filling is not allowed")]
-    NoFill,
-}
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -138,6 +131,7 @@ impl Asset for Order {
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = Trade;
+    type TradeError = TradeError;
 
     #[inline]
     fn id(&self) -> OrderId {
@@ -209,33 +203,45 @@ impl Asset for Order {
     }
 
     #[inline]
-    fn trade(&mut self, other: &mut Self) -> Option<Self::Trade> {
+    fn trade(
+        &mut self,
+        other: &mut Self,
+    ) -> Result<Self::Trade, Self::TradeError> {
         let (taker, maker) = (self, other);
 
-        // TODO: provide more useuful outputs to matching algorithms.
-        Trade::new(taker, maker).ok()
+        Trade::new(taker, maker)
     }
 
     #[inline]
-    fn matches(&self, order: &Self) -> bool {
-        let (taker, maker) = (self, order);
+    fn matches(&self, other: &Self) -> Result<(), Self::TradeError> {
+        let (taker, maker) = (self, other);
 
         // Matching cannot occur between closed orders.
         if taker.is_closed() || maker.is_closed() {
-            return false;
+            Err(StatusError::Closed)?
         }
 
         match (taker.side(), maker.side()) {
-            (OrderSide::Ask, OrderSide::Bid) => {
-                matches!(taker.type_, OrderType::Market { .. })
-                    || taker.limit_price() <= maker.limit_price()
+            (OrderSide::Ask, OrderSide::Bid)
+                if taker.limit_price().is_some()
+                    && taker.limit_price() > maker.limit_price() =>
+            {
+                Err(PriceError::Incompatible)?;
             }
-            (OrderSide::Bid, OrderSide::Ask) => {
-                matches!(taker.type_, OrderType::Market { .. })
-                    || taker.limit_price() >= maker.limit_price()
+            (OrderSide::Bid, OrderSide::Ask)
+                if taker.limit_price().is_some()
+                    && taker.limit_price() < maker.limit_price() =>
+            {
+                Err(PriceError::Incompatible)?;
             }
-            _ => false,
+            (OrderSide::Ask, OrderSide::Bid)
+            | (OrderSide::Bid, OrderSide::Ask) => (),
+            _ => {
+                Err(SideError::Conflict)?;
+            }
         }
+
+        Ok(())
     }
 
     #[inline]
@@ -246,6 +252,14 @@ impl Asset for Order {
             _ => (),
         }
     }
+}
+
+#[derive(Debug, Error)]
+pub enum OrderError {
+    #[error("filling amount exceeds remaining amount")]
+    Overfill,
+    #[error("empty filling is not allowed")]
+    NoFill,
 }
 
 #[cfg(test)]
@@ -262,7 +276,7 @@ mod tests {
             let mut bid =
                 Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
 
-            assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
@@ -272,7 +286,7 @@ mod tests {
             let mut bid =
                 Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
 
-            assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
@@ -282,7 +296,7 @@ mod tests {
             let mut bid =
                 Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
 
-            assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.trade(&mut bid).is_ok());
             assert!(ask.is_closed());
             assert!(!bid.is_closed());
         }
@@ -294,7 +308,7 @@ mod tests {
             let mut bid =
                 Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 5);
 
-            assert!(ask.trade(&mut bid).is_some());
+            assert!(ask.trade(&mut bid).is_ok());
             assert!(!ask.is_closed());
             assert!(bid.is_closed());
         }
@@ -310,7 +324,7 @@ mod tests {
             let mut ask_2 =
                 Order::new_limit(OrderId::new(2), OrderSide::Ask, 10, 10);
 
-            assert!(ask_1.trade(&mut ask_2).is_none());
+            assert!(ask_1.trade(&mut ask_2).is_err());
         }
 
         #[test]
@@ -320,7 +334,7 @@ mod tests {
             let mut bid =
                 Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
 
-            assert!(ask.trade(&mut bid).is_none());
+            assert!(ask.trade(&mut bid).is_err());
         }
     }
 
@@ -336,7 +350,7 @@ mod tests {
         let mut ask = Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
         let mut bid = Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 5);
 
-        assert!(ask.trade(&mut bid).is_some());
+        assert!(ask.trade(&mut bid).is_ok());
 
         ask.cancel();
 

@@ -20,9 +20,7 @@ impl Trade {
         taker: &mut Order,
         maker: &mut Order,
     ) -> Result<Trade, TradeError> {
-        if !taker.matches(maker) {
-            Err(PriceError::Incompatible)?;
-        }
+        taker.matches(maker)?;
 
         let exchanged = taker.remaining().min(maker.remaining());
         let price =
@@ -52,6 +50,16 @@ pub enum TradeError {
     PriceError(#[from] PriceError),
     #[error(transparent)]
     SideError(#[from] SideError),
+    #[error(transparent)]
+    StatusError(#[from] StatusError),
+}
+
+#[derive(Debug, Error)]
+pub enum PriceError {
+    #[error("prices do not match each other")]
+    Incompatible,
+    #[error("limit price is a must")]
+    NotFound,
 }
 
 #[derive(Debug, Error)]
@@ -61,7 +69,7 @@ pub enum SideError {
 }
 
 #[derive(Debug, Error)]
-pub enum PriceError {
-    #[error("prices do not match each other")]
-    Incompatible,
+pub enum StatusError {
+    #[error("taker and maker cannot be closed")]
+    Closed,
 }

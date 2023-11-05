@@ -12,7 +12,7 @@ fn simple_match() {
     let mut ask = ORDERS[0];
     let mut bid = ORDERS[1];
 
-    assert!(ask.trade(&mut bid).is_some());
+    assert!(ask.trade(&mut bid).is_ok());
     assert!(ask.is_closed());
     assert!(bid.is_closed());
 }
@@ -22,7 +22,7 @@ fn partial_match() {
     let mut ask = ORDERS[3];
     let mut bid = ORDERS[2];
 
-    assert!(ask.trade(&mut bid).is_some());
+    assert!(ask.trade(&mut bid).is_ok());
     assert!(!ask.is_closed());
     assert!(bid.is_closed());
 }
