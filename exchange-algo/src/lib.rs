@@ -12,10 +12,8 @@ impl Algo for DefaultExchange {
     #[inline]
     fn matching<E: Exchange + ExchangeExt>(
         exchange: &mut E,
-        order: <E as Exchange>::Order,
+        mut incoming_order: <E as Exchange>::Order,
     ) -> Result<(), DefaultExchangeError> {
-        let mut incoming_order = order;
-
         policy::before_policies()
             .iter()
             .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
@@ -24,7 +22,7 @@ impl Algo for DefaultExchange {
             incoming_order.is_closed(),
             exchange.peek_mut(&incoming_order.side().opposite()),
         ) {
-            let Some(_trade) = incoming_order.trade(top_order) else {
+            let Ok(_trade) = incoming_order.trade(top_order) else {
                 // Since incoming order is not matching to top order anymore, we
                 // can move on.
                 break;
@@ -104,7 +102,7 @@ mod policy {
                 .take_while(|order| {
                     // Gather only the orders that are compatible to the
                     // `incoming_order`.
-                    order.matches(incoming_order)
+                    order.matches(incoming_order).is_ok()
                 })
                 .map(|order| order.remaining())
                 .reduce(|curr, acc| curr + acc)
@@ -120,7 +118,9 @@ mod policy {
             if incoming_order.is_post_only()
                 && !exchange
                     .peek(&incoming_order.side().opposite())
-                    .is_some_and(|top_order| incoming_order.matches(top_order))
+                    .is_some_and(|top_order| {
+                        incoming_order.matches(top_order).is_ok()
+                    })
             {
                 // Post-only orders must go directly to orderbook and do not be
                 // executed as taker at all, otherwise it'll be canceled.

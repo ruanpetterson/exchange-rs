@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::ops::Add;
 
 use num::Zero;
@@ -15,6 +16,8 @@ pub trait Asset<Order = Self>: PartialOrd {
     type OrderStatus: Copy + Eq;
     /// Trade struct.
     type Trade;
+    /// Trade error struct.
+    type TradeError: Error;
     /// Return order unique identifier.
     fn id(&self) -> Self::OrderId;
     /// Return order side.
@@ -33,10 +36,13 @@ pub trait Asset<Order = Self>: PartialOrd {
     fn is_immediate_or_cancel(&self) -> bool;
     /// Returns `true` if order is post-only.
     fn is_post_only(&self) -> bool;
-    /// Returns `true` if orders match.
-    fn matches(&self, other: &Order) -> bool;
+    /// Returns `Ok` if orders match.
+    fn matches(&self, other: &Order) -> Result<(), Self::TradeError>;
     /// Execute a trade.
-    fn trade(&mut self, other: &mut Order) -> Option<Self::Trade>;
+    fn trade(
+        &mut self,
+        other: &mut Order,
+    ) -> Result<Self::Trade, Self::TradeError>;
     /// Cancel the order.
     fn cancel(&mut self);
 }
