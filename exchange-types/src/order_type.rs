@@ -4,20 +4,20 @@
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "UPPERCASE"))]
 #[cfg_attr(feature = "serde", serde(tag = "type"))]
-pub enum OrderType {
+pub enum OrderType<Base = u64, Quote = u64> {
     /// Limit orders are both the default and basic order type. A limit order
     /// requires specifying a price and size. The size is the number of bitcoin
     /// to buy or sell, and the price is the price per bitcoin. The limit order
     /// will be filled at the price specified or better.
     Limit {
-        limit_price: u64,
+        unit_price: Quote,
         /// Time in force policies provide guarantees about the lifetime of an
         /// [order](Order).
         #[cfg_attr(feature = "serde", serde(default))]
         time_in_force: TimeInForce,
-        amount: u64,
+        amount: Base,
         #[cfg_attr(feature = "serde", serde(default))]
-        filled: u64,
+        filled: Base,
     },
     /// Market orders differ from limit orders in that they provide no pricing
     /// guarantees. They however do provide a way to buy or sell specific
@@ -30,9 +30,8 @@ pub enum OrderType {
         /// is considered a fill or kill order.
         #[cfg_attr(feature = "serde", serde(default))]
         all_or_none: bool,
-        amount: u64,
-        #[cfg_attr(feature = "serde", serde(default))]
-        filled: u64,
+        #[cfg_attr(feature = "serde", serde(flatten))]
+        priced_by: PricedBy,
     },
 }
 
@@ -77,4 +76,19 @@ impl Default for TimeInForce {
     fn default() -> Self {
         Self::GoodTilCancel { post_only: false }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum PricedBy<Base = u64, Quote = u64> {
+    Base {
+        amount: Base,
+        #[cfg_attr(feature = "serde", serde(default))]
+        filled: Base,
+    },
+    Quote {
+        quote_amount: Quote,
+        #[cfg_attr(feature = "serde", serde(default))]
+        filled: Quote,
+    },
 }

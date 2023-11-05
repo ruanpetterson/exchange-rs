@@ -18,7 +18,7 @@ fn valid_match() {
             order_id,
             OrderSide::Bid,
             OrderType::Limit {
-                limit_price: 100,
+                unit_price: 100,
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: true,
                 },
@@ -45,7 +45,7 @@ fn invalid_match() {
             order_id,
             OrderSide::Bid,
             OrderType::Limit {
-                limit_price: 100,
+                unit_price: 100,
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: true,
                 },

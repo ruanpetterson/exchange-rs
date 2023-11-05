@@ -5,7 +5,7 @@ use std::ops::AddAssign;
 use exchange_core::Asset;
 use thiserror::Error;
 
-use crate::order_type::TimeInForce;
+use crate::order_type::{PricedBy, TimeInForce};
 use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
 
 #[derive(Debug, Error)]
@@ -48,7 +48,7 @@ impl Order {
             id,
             side,
             type_: OrderType::Limit {
-                limit_price,
+                unit_price: limit_price,
                 time_in_force: Default::default(),
                 amount,
                 filled: 0,
@@ -78,7 +78,12 @@ impl Order {
     pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
         let filled = match self.type_ {
             OrderType::Limit { ref mut filled, .. }
-            | OrderType::Market { ref mut filled, .. } => filled,
+            | OrderType::Market {
+                priced_by:
+                    PricedBy::Base { ref mut filled, .. }
+                    | PricedBy::Quote { ref mut filled, .. },
+                ..
+            } => filled,
         };
 
         filled.add_assign(amount);
@@ -152,7 +157,10 @@ impl Asset for Order {
     #[inline]
     fn limit_price(&self) -> Option<Self::OrderPrice> {
         match self.type_ {
-            OrderType::Limit { limit_price, .. } => Some(limit_price),
+            OrderType::Limit {
+                unit_price: limit_price,
+                ..
+            } => Some(limit_price),
             _ => None,
         }
     }
