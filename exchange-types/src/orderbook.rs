@@ -9,7 +9,7 @@ use exchange_core::{Asset, Exchange, ExchangeExt};
 use indexmap::IndexMap;
 use num::Zero;
 
-use crate::OrderSide;
+use crate::Side;
 
 pub struct Orderbook<Order: Asset, Trade> {
     orders: IndexMap<<Order as Asset>::OrderId, Order>,
@@ -51,7 +51,7 @@ where
 
 impl<Order, Trade> Exchange for Orderbook<Order, Trade>
 where
-    Order: Asset<OrderSide = OrderSide>,
+    Order: Asset<OrderSide = Side>,
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
@@ -70,13 +70,13 @@ where
             };
 
         match side {
-            OrderSide::Ask => Either::Left(
+            Side::Ask => Either::Left(
                 self.ask
                     .values()
                     .flat_map(VecDeque::iter)
                     .map(order_id_to_order),
             ),
-            OrderSide::Bid => Either::Right(
+            Side::Bid => Either::Right(
                 self.bid
                     .values()
                     .rev()
@@ -89,8 +89,8 @@ where
     #[inline]
     fn insert(&mut self, order: Self::Order) {
         match order.side() {
-            OrderSide::Ask => &mut self.ask,
-            OrderSide::Bid => &mut self.bid,
+            Side::Ask => &mut self.ask,
+            Side::Bid => &mut self.bid,
         }
         .entry(
             order
@@ -115,8 +115,8 @@ where
             .expect("bookable orders must have a limit price");
 
         let Entry::Occupied(mut level) = (match order.side() {
-            OrderSide::Ask => self.ask.entry(limit_price),
-            OrderSide::Bid => self.bid.entry(limit_price),
+            Side::Ask => self.ask.entry(limit_price),
+            Side::Bid => self.bid.entry(limit_price),
         }) else {
             unreachable!("orders that lives in index must also be in the tree");
         };
@@ -142,10 +142,10 @@ where
     }
 
     #[inline]
-    fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
+    fn peek(&self, side: &Side) -> Option<&Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_key_value(),
-            OrderSide::Bid => self.bid.last_key_value(),
+            Side::Ask => self.ask.first_key_value(),
+            Side::Bid => self.bid.last_key_value(),
         }
         .map(|(_, level)| level)?
         .front()?;
@@ -157,10 +157,10 @@ where
     }
 
     #[inline]
-    fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
+    fn peek_mut(&mut self, side: &Side) -> Option<&mut Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_key_value(),
-            OrderSide::Bid => self.bid.last_key_value(),
+            Side::Ask => self.ask.first_key_value(),
+            Side::Bid => self.bid.last_key_value(),
         }
         .map(|(_, level)| level)?
         .front()?;
@@ -172,10 +172,10 @@ where
     }
 
     #[inline]
-    fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
+    fn pop(&mut self, side: &Side) -> Option<Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_entry(),
-            OrderSide::Bid => self.bid.last_entry(),
+            Side::Ask => self.ask.first_entry(),
+            Side::Bid => self.bid.last_entry(),
         }
         .and_then(|mut level| {
             // It prevents dangling levels (level with no orders).
@@ -195,7 +195,7 @@ where
 
 impl<Order, Trade> ExchangeExt for Orderbook<Order, Trade>
 where
-    Order: Asset<OrderSide = OrderSide>,
+    Order: Asset<OrderSide = Side>,
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
@@ -204,8 +204,8 @@ where
     ) -> Option<(<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice)>
     {
         Some((
-            self.peek(&OrderSide::Ask)?.limit_price()?,
-            self.peek(&OrderSide::Bid)?.limit_price()?,
+            self.peek(&Side::Ask)?.limit_price()?,
+            self.peek(&Side::Bid)?.limit_price()?,
         ))
     }
 
@@ -220,13 +220,13 @@ where
         &self,
     ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
         let ask = self
-            .iter(&OrderSide::Ask)
+            .iter(&Side::Ask)
             .map(Order::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);
 
         let bid = self
-            .iter(&OrderSide::Bid)
+            .iter(&Side::Bid)
             .map(Order::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);

@@ -1,14 +1,14 @@
 use exchange_core::Asset;
 use thiserror::Error;
 
-use super::{Order, OrderId};
+use super::{Id, Order};
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Trade {
-    pub(crate) taker: OrderId,
-    pub(crate) maker: OrderId,
+    pub(crate) taker: Id,
+    pub(crate) maker: Id,
     pub(crate) amount: u64,
     pub(crate) price: u64,
 }

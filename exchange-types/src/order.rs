@@ -5,48 +5,48 @@ use std::ops::AddAssign;
 use exchange_core::Asset;
 use thiserror::Error;
 
-use crate::order_type::TimeInForce;
+use crate::kind::TimeInForce;
 use crate::trade::{PriceError, SideError, StatusError, TradeError};
-use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
+use crate::{Id, Kind, Side, Status, Trade};
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Order {
-    id: OrderId,
-    side: OrderSide,
+    id: Id,
+    side: Side,
     #[cfg_attr(feature = "serde", serde(flatten))]
-    type_: OrderType,
-    status: OrderStatus,
+    kind: Kind,
+    status: Status,
 }
 
 impl Order {
     #[inline]
-    pub fn new(id: OrderId, side: OrderSide, type_: OrderType) -> Self {
+    pub fn new(id: Id, side: Side, kind: Kind) -> Self {
         Self {
             id,
             side,
-            type_,
-            status: OrderStatus::Open,
+            kind,
+            status: Status::Open,
         }
     }
 
     #[inline]
     pub fn new_limit(
-        id: OrderId,
-        side: OrderSide,
+        id: Id,
+        side: Side,
         limit_price: u64,
         amount: u64,
     ) -> Self {
         Self {
             id,
             side,
-            type_: OrderType::Limit {
+            kind: Kind::Limit {
                 limit_price,
                 time_in_force: Default::default(),
                 amount,
                 filled: 0,
             },
-            status: OrderStatus::Open,
+            status: Status::Open,
         }
     }
 
@@ -69,17 +69,17 @@ impl Order {
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
     pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
-        let filled = match self.type_ {
-            OrderType::Limit { ref mut filled, .. }
-            | OrderType::Market { ref mut filled, .. } => filled,
+        let filled = match self.kind {
+            Kind::Limit { ref mut filled, .. }
+            | Kind::Market { ref mut filled, .. } => filled,
         };
 
         filled.add_assign(amount);
 
         self.status = if self.remaining() == 0 {
-            OrderStatus::Completed
+            Status::Completed
         } else {
-            OrderStatus::Partial
+            Status::Partial
         };
     }
 
@@ -126,49 +126,49 @@ impl PartialOrd for Order {
 
 impl Asset for Order {
     type OrderAmount = u64;
-    type OrderId = OrderId;
+    type OrderId = Id;
     type OrderPrice = u64;
-    type OrderSide = OrderSide;
-    type OrderStatus = OrderStatus;
+    type OrderSide = Side;
+    type OrderStatus = Status;
     type Trade = Trade;
     type TradeError = TradeError;
 
     #[inline]
-    fn id(&self) -> OrderId {
+    fn id(&self) -> Id {
         self.id
     }
 
     #[inline]
-    fn side(&self) -> OrderSide {
+    fn side(&self) -> Side {
         self.side
     }
 
     #[inline]
     fn limit_price(&self) -> Option<Self::OrderPrice> {
-        match self.type_ {
-            OrderType::Limit { limit_price, .. } => Some(limit_price),
+        match self.kind {
+            Kind::Limit { limit_price, .. } => Some(limit_price),
             _ => None,
         }
     }
 
     #[inline]
     fn remaining(&self) -> Self::OrderAmount {
-        match self.type_ {
-            OrderType::Limit { amount, filled, .. }
-            | OrderType::Market { amount, filled, .. } => amount - filled,
+        match self.kind {
+            Kind::Limit { amount, filled, .. }
+            | Kind::Market { amount, filled, .. } => amount - filled,
         }
     }
 
     #[inline]
-    fn status(&self) -> OrderStatus {
+    fn status(&self) -> Status {
         self.status
     }
 
     #[inline]
     fn is_fill_or_kill(&self) -> bool {
-        match self.type_ {
-            OrderType::Market { all_or_none, .. }
-            | OrderType::Limit {
+        match self.kind {
+            Kind::Market { all_or_none, .. }
+            | Kind::Limit {
                 time_in_force: TimeInForce::ImmediateOrCancel { all_or_none },
                 ..
             } => all_or_none,
@@ -180,26 +180,24 @@ impl Asset for Order {
     fn is_closed(&self) -> bool {
         matches!(
             self.status(),
-            OrderStatus::Cancelled
-                | OrderStatus::Closed
-                | OrderStatus::Completed
+            Status::Cancelled | Status::Closed | Status::Completed
         )
     }
 
     #[inline]
     fn is_immediate_or_cancel(&self) -> bool {
         matches!(
-            self.type_,
-            OrderType::Limit {
+            self.kind,
+            Kind::Limit {
                 time_in_force: TimeInForce::ImmediateOrCancel { .. },
                 ..
-            } | OrderType::Market { .. }
+            } | Kind::Market { .. }
         )
     }
 
     #[inline]
     fn is_post_only(&self) -> bool {
-        matches!(self.type_, OrderType::Limit { time_in_force: TimeInForce::GoodTilCancel { post_only }, .. } if post_only)
+        matches!(self.kind, Kind::Limit { time_in_force: TimeInForce::GoodTilCancel { post_only }, .. } if post_only)
     }
 
     #[inline]
@@ -222,20 +220,19 @@ impl Asset for Order {
         }
 
         match (taker.side(), maker.side()) {
-            (OrderSide::Ask, OrderSide::Bid)
+            (Side::Ask, Side::Bid)
                 if taker.limit_price().is_some()
                     && taker.limit_price() > maker.limit_price() =>
             {
                 Err(PriceError::Incompatible)?;
             }
-            (OrderSide::Bid, OrderSide::Ask)
+            (Side::Bid, Side::Ask)
                 if taker.limit_price().is_some()
                     && taker.limit_price() < maker.limit_price() =>
             {
                 Err(PriceError::Incompatible)?;
             }
-            (OrderSide::Ask, OrderSide::Bid)
-            | (OrderSide::Bid, OrderSide::Ask) => (),
+            (Side::Ask, Side::Bid) | (Side::Bid, Side::Ask) => (),
             _ => {
                 Err(SideError::Conflict)?;
             }
@@ -247,8 +244,8 @@ impl Asset for Order {
     #[inline]
     fn cancel(&mut self) {
         match self.status() {
-            OrderStatus::Open => self.status = OrderStatus::Cancelled,
-            OrderStatus::Partial => self.status = OrderStatus::Closed,
+            Status::Open => self.status = Status::Cancelled,
+            Status::Partial => self.status = Status::Closed,
             _ => (),
         }
     }
@@ -271,30 +268,24 @@ mod tests {
 
         #[test]
         fn same_prices() {
-            let mut ask =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
-            let mut bid =
-                Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
+            let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
+            let mut bid = Order::new_limit(Id::new(2), Side::Bid, 10, 10);
 
             assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
         fn different_prices() {
-            let mut ask =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
-            let mut bid =
-                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
+            let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
+            let mut bid = Order::new_limit(Id::new(2), Side::Bid, 20, 10);
 
             assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
         fn partial_maker() {
-            let mut ask =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 5);
-            let mut bid =
-                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 10);
+            let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 5);
+            let mut bid = Order::new_limit(Id::new(2), Side::Bid, 20, 10);
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(ask.is_closed());
@@ -303,10 +294,8 @@ mod tests {
 
         #[test]
         fn partial_taker() {
-            let mut ask =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
-            let mut bid =
-                Order::new_limit(OrderId::new(2), OrderSide::Bid, 20, 5);
+            let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
+            let mut bid = Order::new_limit(Id::new(2), Side::Bid, 20, 5);
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(!ask.is_closed());
@@ -319,20 +308,16 @@ mod tests {
 
         #[test]
         fn same_side() {
-            let mut ask_1 =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
-            let mut ask_2 =
-                Order::new_limit(OrderId::new(2), OrderSide::Ask, 10, 10);
+            let mut ask_1 = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
+            let mut ask_2 = Order::new_limit(Id::new(2), Side::Ask, 10, 10);
 
             assert!(ask_1.trade(&mut ask_2).is_err());
         }
 
         #[test]
         fn incompatible_prices() {
-            let mut ask =
-                Order::new_limit(OrderId::new(1), OrderSide::Ask, 20, 10);
-            let mut bid =
-                Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 10);
+            let mut ask = Order::new_limit(Id::new(1), Side::Ask, 20, 10);
+            let mut bid = Order::new_limit(Id::new(2), Side::Bid, 10, 10);
 
             assert!(ask.trade(&mut bid).is_err());
         }
@@ -340,20 +325,20 @@ mod tests {
 
     #[test]
     fn cancel_order() {
-        let mut ask = Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
+        let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
         ask.cancel();
-        assert_eq!(ask.status(), OrderStatus::Cancelled);
+        assert_eq!(ask.status(), Status::Cancelled);
     }
 
     #[test]
     fn close_order() {
-        let mut ask = Order::new_limit(OrderId::new(1), OrderSide::Ask, 10, 10);
-        let mut bid = Order::new_limit(OrderId::new(2), OrderSide::Bid, 10, 5);
+        let mut ask = Order::new_limit(Id::new(1), Side::Ask, 10, 10);
+        let mut bid = Order::new_limit(Id::new(2), Side::Bid, 10, 5);
 
         assert!(ask.trade(&mut bid).is_ok());
 
         ask.cancel();
 
-        assert_eq!(ask.status(), OrderStatus::Closed);
+        assert_eq!(ask.status(), Status::Closed);
     }
 }
