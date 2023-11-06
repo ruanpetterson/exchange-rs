@@ -13,7 +13,7 @@ impl Engine {
     pub fn new(pair: &str) -> Self {
         Self {
             pair: CompactString::new_inline(pair),
-            orderbook: Orderbook::new().into(),
+            orderbook: Orderbook::new(),
         }
     }
 
