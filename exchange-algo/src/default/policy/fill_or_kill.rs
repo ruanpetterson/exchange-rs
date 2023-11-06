@@ -34,9 +34,9 @@ impl FillOrKill {
                 // `incoming_order`.
                 order.matches(incoming_order).is_ok()
             })
-            .map(|order| order.remaining())
+            .map(<E::Order as Asset>::remaining)
             .reduce(|curr, acc| curr + acc)
-            .unwrap_or(Zero::zero())
+            .unwrap_or_else(Zero::zero)
             >= incoming_order.remaining()
     }
 }

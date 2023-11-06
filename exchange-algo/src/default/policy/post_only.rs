@@ -7,14 +7,15 @@ impl<E: Exchange> Policy<E::Order, E> for PostOnly {
     #[inline]
     fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
         if incoming_order.is_post_only()
-            && !exchange
+            && exchange
                 .peek(&incoming_order.side().opposite())
                 .is_some_and(|top_order| {
                     incoming_order.matches(top_order).is_ok()
                 })
         {
             // Post-only orders must go directly to orderbook and do not be
-            // executed as taker at all, otherwise it'll be canceled.
+            // executed as taker at all, otherwise it must be cancelled before
+            // enter the book.
             incoming_order.cancel();
         }
     }
