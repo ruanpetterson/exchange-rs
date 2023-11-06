@@ -88,26 +88,17 @@ where
 
     #[inline]
     fn insert(&mut self, order: Self::Order) {
-        let level = match order.side() {
-            OrderSide::Ask => self
-                .ask
-                .entry(
-                    order
-                        .limit_price()
-                        .expect("bookable orders must have a limit price"),
-                )
-                .or_insert_with(|| VecDeque::with_capacity(8)),
-            OrderSide::Bid => self
-                .bid
-                .entry(
-                    order
-                        .limit_price()
-                        .expect("bookable orders must have a limit price"),
-                )
-                .or_insert_with(|| VecDeque::with_capacity(8)),
-        };
-
-        level.push_back(order.id());
+        match order.side() {
+            OrderSide::Ask => &mut self.ask,
+            OrderSide::Bid => &mut self.bid,
+        }
+        .entry(
+            order
+                .limit_price()
+                .expect("bookable orders must have a limit price"),
+        )
+        .or_default()
+        .push_back(order.id());
 
         self.orders.insert(order.id(), order);
     }
@@ -123,45 +114,22 @@ where
             .limit_price()
             .expect("bookable orders must have a limit price");
 
-        match order.side() {
-            OrderSide::Ask => {
-                let Entry::Occupied(mut level) = self.ask.entry(limit_price)
-                else {
-                    unreachable!(
-                        "orders that lives in index must also be in the tree"
-                    );
-                };
+        let Entry::Occupied(mut level) = (match order.side() {
+            OrderSide::Ask => self.ask.entry(limit_price),
+            OrderSide::Bid => self.bid.entry(limit_price),
+        }) else {
+            unreachable!("orders that lives in index must also be in the tree");
+        };
 
-                // It prevents dangling levels (level with no orders).
-                if level.get().len() == 1 {
-                    level.remove().pop_front()
-                } else {
-                    level
-                        .get()
-                        .iter()
-                        .position(|&order_id| order.id() == order_id)
-                        .and_then(|index| level.get_mut().remove(index))
-                }
-            }
-            OrderSide::Bid => {
-                let Entry::Occupied(mut level) = self.bid.entry(limit_price)
-                else {
-                    unreachable!(
-                        "orders that lives in index must also be in the tree"
-                    );
-                };
-
-                // It prevents dangling levels (level with no orders).
-                if level.get().len() == 1 {
-                    level.remove().pop_front()
-                } else {
-                    level
-                        .get()
-                        .iter()
-                        .position(|&order_id| order.id() == order_id)
-                        .and_then(|index| level.get_mut().remove(index))
-                }
-            }
+        // It prevents dangling levels (level with no orders).
+        if level.get().len() == 1 {
+            level.remove().pop_front()
+        } else {
+            level
+                .get()
+                .iter()
+                .position(|&order_id| order.id() == order_id)
+                .and_then(|index| level.get_mut().remove(index))
         }
         .expect("indexed orders must be in the book tree");
 
@@ -170,60 +138,58 @@ where
             "order id must be the same; something is wrong otherwise"
         );
 
-        Some(order)
+        order.into()
     }
 
     #[inline]
     fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
-        match side {
-            OrderSide::Ask => {
-                self.ask.first_key_value().map(|(_, level)| level)?
-            }
-            OrderSide::Bid => {
-                self.bid.last_key_value().map(|(_, level)| level)?
-            }
+        let order_id = match side {
+            OrderSide::Ask => self.ask.first_key_value(),
+            OrderSide::Bid => self.bid.last_key_value(),
         }
-        .front()
-        .and_then(|order_id| self.orders.get(order_id))
+        .map(|(_, level)| level)?
+        .front()?;
+
+        self.orders
+            .get(order_id)
+            .expect("every order that lives in tree must also be in the index")
+            .into()
     }
 
     #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
-        match side {
-            OrderSide::Ask => {
-                self.ask.first_key_value().map(|(_, level)| level)?
-            }
-            OrderSide::Bid => {
-                self.bid.last_key_value().map(|(_, level)| level)?
-            }
+        let order_id = match side {
+            OrderSide::Ask => self.ask.first_key_value(),
+            OrderSide::Bid => self.bid.last_key_value(),
         }
-        .front()
-        .and_then(|order_id| self.orders.get_mut(order_id))
+        .map(|(_, level)| level)?
+        .front()?;
+
+        self.orders
+            .get_mut(order_id)
+            .expect("every order that lives in tree must also be in the index")
+            .into()
     }
 
     #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
-        match side {
-            OrderSide::Ask => {
-                let mut level = self.ask.first_entry()?;
-                // It prevents dangling levels (level with no orders).
-                if level.get().len() == 1 {
-                    level.remove().pop_front()
-                } else {
-                    level.get_mut().pop_front()
-                }
-            }
-            OrderSide::Bid => {
-                let mut level = self.bid.first_entry()?;
-                // It prevents dangling levels (level with no orders).
-                if level.get().len() == 1 {
-                    level.remove().pop_front()
-                } else {
-                    level.get_mut().pop_front()
-                }
-            }
+        let order_id = match side {
+            OrderSide::Ask => self.ask.first_entry(),
+            OrderSide::Bid => self.bid.last_entry(),
         }
-        .and_then(|order_id| self.orders.remove(&order_id))
+        .and_then(|mut level| {
+            // It prevents dangling levels (level with no orders).
+            if level.get().len() == 1 {
+                level.remove().pop_front()
+            } else {
+                level.get_mut().pop_front()
+            }
+        })?;
+
+        self.orders
+            .remove(&order_id)
+            .expect("every order that lives in tree must also be in the index")
+            .into()
     }
 }
 
@@ -255,15 +221,15 @@ where
     ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
         let ask = self
             .iter(&OrderSide::Ask)
-            .map(|order| order.remaining())
+            .map(Order::remaining)
             .reduce(|acc, curr| acc + curr)
-            .unwrap_or(Zero::zero());
+            .unwrap_or_else(Zero::zero);
 
         let bid = self
             .iter(&OrderSide::Bid)
-            .map(|order| order.remaining())
+            .map(Order::remaining)
             .reduce(|acc, curr| acc + curr)
-            .unwrap_or(Zero::zero());
+            .unwrap_or_else(Zero::zero);
 
         (ask, bid)
     }
