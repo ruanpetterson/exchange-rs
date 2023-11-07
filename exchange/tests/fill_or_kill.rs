@@ -1,7 +1,6 @@
+use exchange_algo::Orderbook;
 use exchange_core::Exchange;
-use exchange_types::{
-    Order, OrderId, OrderSide, OrderType, Orderbook, TimeInForce,
-};
+use exchange_types::{Order, OrderId, OrderSide, OrderType, TimeInForce};
 use tap::{Pipe, Tap};
 
 #[test]

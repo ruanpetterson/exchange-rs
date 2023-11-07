@@ -1,5 +1,6 @@
+use exchange_algo::Orderbook;
 use exchange_core::Asset;
-use exchange_types::{Order, Orderbook, Trade};
+use exchange_types::{Order, Trade};
 use once_cell::sync::Lazy;
 
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {

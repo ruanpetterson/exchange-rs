@@ -16,8 +16,5 @@ pub use order_status::OrderStatus;
 mod order_type;
 pub use order_type::{OrderType, TimeInForce};
 
-mod orderbook;
-pub use orderbook::*;
-
 mod trade;
 pub use trade::Trade;
