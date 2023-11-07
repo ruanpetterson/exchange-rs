@@ -4,7 +4,7 @@
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "UPPERCASE"))]
 #[cfg_attr(feature = "serde", serde(tag = "type"))]
-pub enum OrderType {
+pub enum Kind {
     /// Limit orders are both the default and basic order type. A limit order
     /// requires specifying a price and size. The size is the number of bitcoin
     /// to buy or sell, and the price is the price per bitcoin. The limit order

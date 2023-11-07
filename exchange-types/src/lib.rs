@@ -1,20 +1,20 @@
 mod order;
 pub use order::Order;
 
-mod order_id;
-pub use order_id::OrderId;
+mod id;
+pub use id::Id;
 
-mod order_request;
-pub use order_request::OrderRequest;
+mod request;
+pub use request::Request;
 
-mod order_side;
-pub use order_side::OrderSide;
+mod side;
+pub use side::Side;
 
-mod order_status;
-pub use order_status::OrderStatus;
+mod status;
+pub use status::Status;
 
-mod order_type;
-pub use order_type::{OrderType, TimeInForce};
+mod kind;
+pub use kind::{Kind, TimeInForce};
 
 mod orderbook;
 pub use orderbook::*;

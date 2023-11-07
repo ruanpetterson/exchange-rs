@@ -1,6 +1,6 @@
 use compact_str::CompactString;
 use exchange_core::Exchange;
-use exchange_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
+use exchange_types::{Id, Order, Orderbook, Request, Trade};
 use thiserror::Error;
 
 pub struct Engine {
@@ -20,10 +20,10 @@ impl Engine {
     #[inline]
     pub fn process(
         &mut self,
-        incoming_order: OrderRequest,
+        incoming_order: Request,
     ) -> Result<(), EngineError> {
         match incoming_order {
-            OrderRequest::Create { ref pair, .. } => {
+            Request::Create { ref pair, .. } => {
                 if pair != &self.pair {
                     Err(PairError::Mismatch {
                         expected: self.pair.clone(),
@@ -34,9 +34,9 @@ impl Engine {
                 let order = Order::try_from(incoming_order).unwrap();
                 let _ = self.orderbook.matching(order);
             }
-            OrderRequest::Delete { ref order_id } => {
+            Request::Delete { ref order_id } => {
                 self.orderbook
-                    .remove(&OrderId::new(order_id.parse::<u64>().unwrap()));
+                    .remove(&Id::new(order_id.parse::<u64>().unwrap()));
             }
         };
 
