@@ -10,12 +10,10 @@ default = ["serde"]
 serde = ["dep:serde"]
 
 [dependencies]
-exchange-algo = { path = "../exchange-algo" }
 exchange-core = { path = "../exchange-core" }
 
 compact_str = "0.7.1"
-either = "1.9.0"
-indexmap = "2.0.0"
+enum-map = "2.7.0"
 num = "0.4.1"
 rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }

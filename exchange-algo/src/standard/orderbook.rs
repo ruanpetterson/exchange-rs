@@ -4,22 +4,29 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use either::Either;
-use exchange_algo::DefaultExchange;
+use enum_map::{EnumArray, EnumMap};
 use exchange_core::{Asset, Exchange, ExchangeExt};
-use indexmap::IndexMap;
+use exchange_types::OrderSide;
 use num::Zero;
 
-use crate::OrderSide;
+use crate::MatchingAlgo;
 
-pub struct Orderbook<Order: Asset, Trade> {
-    orders: IndexMap<<Order as Asset>::OrderId, Order>,
-    ask: BTreeMap<
-        <Order as Asset>::OrderPrice,
-        VecDeque<<Order as Asset>::OrderId>,
+pub struct Orderbook<Order: Asset, Trade>
+where
+    <Order as Asset>::OrderSide: EnumArray<
+        BTreeMap<
+            <Order as Asset>::OrderPrice,
+            VecDeque<<Order as Asset>::OrderId>,
+        >,
     >,
-    bid: BTreeMap<
-        <Order as Asset>::OrderPrice,
-        VecDeque<<Order as Asset>::OrderId>,
+{
+    orders_by_id: BTreeMap<<Order as Asset>::OrderId, Order>,
+    orders_by_price: EnumMap<
+        <Order as Asset>::OrderSide,
+        BTreeMap<
+            <Order as Asset>::OrderPrice,
+            VecDeque<<Order as Asset>::OrderId>,
+        >,
     >,
     _trade: PhantomData<Trade>,
 }
@@ -27,6 +34,12 @@ pub struct Orderbook<Order: Asset, Trade> {
 impl<Order, Trade> Orderbook<Order, Trade>
 where
     Order: Asset,
+    <Order as Asset>::OrderSide: EnumArray<
+        BTreeMap<
+            <Order as Asset>::OrderPrice,
+            VecDeque<<Order as Asset>::OrderId>,
+        >,
+    >,
 {
     #[inline]
     pub fn new() -> Self {
@@ -37,13 +50,18 @@ where
 impl<Order, Trade> Default for Orderbook<Order, Trade>
 where
     Order: Asset,
+    <Order as Asset>::OrderSide: EnumArray<
+        BTreeMap<
+            <Order as Asset>::OrderPrice,
+            VecDeque<<Order as Asset>::OrderId>,
+        >,
+    >,
 {
     #[inline]
     fn default() -> Self {
         Self {
-            orders: IndexMap::default(),
-            ask: BTreeMap::default(),
-            bid: BTreeMap::default(),
+            orders_by_id: Default::default(),
+            orders_by_price: Default::default(),
             _trade: PhantomData,
         }
     }
@@ -55,7 +73,7 @@ where
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
-    type Algo = DefaultExchange;
+    type Algo = MatchingAlgo;
     type Order = Order;
 
     fn iter(
@@ -64,20 +82,20 @@ where
     ) -> impl Iterator<Item = &Self::Order> {
         let order_id_to_order =
             |order_id: &<Order as Asset>::OrderId| -> &Order {
-                self.orders
+                self.orders_by_id
                     .get(order_id)
                     .expect("every order in tree must also be in index")
             };
 
         match side {
             OrderSide::Ask => Either::Left(
-                self.ask
+                self.orders_by_price[OrderSide::Ask]
                     .values()
                     .flat_map(VecDeque::iter)
                     .map(order_id_to_order),
             ),
             OrderSide::Bid => Either::Right(
-                self.bid
+                self.orders_by_price[OrderSide::Bid]
                     .values()
                     .rev()
                     .flat_map(VecDeque::iter)
@@ -88,19 +106,16 @@ where
 
     #[inline]
     fn insert(&mut self, order: Self::Order) {
-        match order.side() {
-            OrderSide::Ask => &mut self.ask,
-            OrderSide::Bid => &mut self.bid,
-        }
-        .entry(
-            order
-                .limit_price()
-                .expect("bookable orders must have a limit price"),
-        )
-        .or_default()
-        .push_back(order.id());
+        self.orders_by_price[order.side()]
+            .entry(
+                order
+                    .limit_price()
+                    .expect("bookable orders must have a limit price"),
+            )
+            .or_default()
+            .push_back(order.id());
 
-        self.orders.insert(order.id(), order);
+        self.orders_by_id.insert(order.id(), order);
     }
 
     #[inline]
@@ -108,16 +123,15 @@ where
         &mut self,
         order_id: &<Self::Order as Asset>::OrderId,
     ) -> Option<Self::Order> {
-        let order = self.orders.remove(order_id)?;
+        let order = self.orders_by_id.remove(order_id)?;
 
         let limit_price = order
             .limit_price()
             .expect("bookable orders must have a limit price");
 
-        let Entry::Occupied(mut level) = (match order.side() {
-            OrderSide::Ask => self.ask.entry(limit_price),
-            OrderSide::Bid => self.bid.entry(limit_price),
-        }) else {
+        let Entry::Occupied(mut level) =
+            self.orders_by_price[order.side()].entry(limit_price)
+        else {
             unreachable!("orders that lives in index must also be in the tree");
         };
 
@@ -144,13 +158,17 @@ where
     #[inline]
     fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_key_value(),
-            OrderSide::Bid => self.bid.last_key_value(),
+            &side @ OrderSide::Ask => {
+                self.orders_by_price[side].first_key_value()
+            }
+            &side @ OrderSide::Bid => {
+                self.orders_by_price[side].last_key_value()
+            }
         }
         .map(|(_, level)| level)?
         .front()?;
 
-        self.orders
+        self.orders_by_id
             .get(order_id)
             .expect("every order that lives in tree must also be in the index")
             .into()
@@ -159,13 +177,17 @@ where
     #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_key_value(),
-            OrderSide::Bid => self.bid.last_key_value(),
+            &side @ OrderSide::Ask => {
+                self.orders_by_price[side].first_key_value()
+            }
+            &side @ OrderSide::Bid => {
+                self.orders_by_price[side].last_key_value()
+            }
         }
         .map(|(_, level)| level)?
         .front()?;
 
-        self.orders
+        self.orders_by_id
             .get_mut(order_id)
             .expect("every order that lives in tree must also be in the index")
             .into()
@@ -174,8 +196,8 @@ where
     #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
         let order_id = match side {
-            OrderSide::Ask => self.ask.first_entry(),
-            OrderSide::Bid => self.bid.last_entry(),
+            &side @ OrderSide::Ask => self.orders_by_price[side].first_entry(),
+            &side @ OrderSide::Bid => self.orders_by_price[side].last_entry(),
         }
         .and_then(|mut level| {
             // It prevents dangling levels (level with no orders).
@@ -186,7 +208,7 @@ where
             }
         })?;
 
-        self.orders
+        self.orders_by_id
             .remove(&order_id)
             .expect("every order that lives in tree must also be in the index")
             .into()
@@ -211,8 +233,12 @@ where
 
     fn len(&self) -> (usize, usize) {
         (
-            self.ask.iter().fold(0, |acc, (_, level)| acc + level.len()),
-            self.bid.iter().fold(0, |acc, (_, level)| acc + level.len()),
+            self.orders_by_price[OrderSide::Ask]
+                .iter()
+                .fold(0, |acc, (_, level)| acc + level.len()),
+            self.orders_by_price[OrderSide::Bid]
+                .iter()
+                .fold(0, |acc, (_, level)| acc + level.len()),
         )
     }
 

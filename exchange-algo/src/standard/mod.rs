@@ -1,9 +1,10 @@
+pub mod orderbook;
 mod policy;
 
 use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite};
 
-pub struct DefaultExchange;
-impl Algo for DefaultExchange {
+pub struct MatchingAlgo;
+impl Algo for MatchingAlgo {
     type Error = DefaultExchangeError;
     type Output = ();
 

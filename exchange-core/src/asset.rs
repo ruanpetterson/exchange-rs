@@ -7,7 +7,7 @@ pub trait Asset<Order = Self>: PartialOrd {
     /// Order amount.
     type OrderAmount: Add<Output = Self::OrderAmount> + Copy + Ord + Zero;
     /// Order unique identifier.
-    type OrderId: Copy + Eq;
+    type OrderId: Copy + Eq + Ord;
     /// Order price.
     type OrderPrice: Copy + Ord;
     /// Order side.

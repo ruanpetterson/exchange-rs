@@ -1,6 +1,7 @@
 use compact_str::CompactString;
+use exchange_algo::Orderbook;
 use exchange_core::Exchange;
-use exchange_types::{Order, OrderId, OrderRequest, Orderbook, Trade};
+use exchange_types::{Order, OrderId, OrderRequest, Trade};
 use thiserror::Error;
 
 pub struct Engine {
