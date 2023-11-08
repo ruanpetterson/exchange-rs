@@ -20,7 +20,16 @@ pub trait Exchange {
     ) -> impl Iterator<Item = &Self::Order>;
 
     /// Inserts an order into the exchange.
-    fn insert(&mut self, order: Self::Order);
+    ///
+    /// # Safety
+    ///
+    /// This is a unsafe call because the caller need to take extra care to
+    /// ensure the integrity and safety of our orderbook by guaranteeing
+    /// that the insertion operation will not result in any overlap between
+    /// the sides of the orderbook.
+    ///
+    /// This method is inteded to be used at `Exchange::matching` internals.
+    unsafe fn insert(&mut self, order: Self::Order);
 
     /// Removes an order from the exchange.
     fn remove(

@@ -105,7 +105,7 @@ where
     }
 
     #[inline]
-    fn insert(&mut self, order: Self::Order) {
+    unsafe fn insert(&mut self, order: Self::Order) {
         self.orders_by_price[order.side()]
             .entry(
                 order
