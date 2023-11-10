@@ -13,7 +13,6 @@ serde = ["dep:serde"]
 exchange-core = { path = "../exchange-core" }
 
 compact_str = "0.7.1"
-enum-map = "2.7.0"
 num = "0.4.1"
 rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }

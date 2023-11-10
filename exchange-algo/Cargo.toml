@@ -8,6 +8,5 @@ exchange-core = { path = "../exchange-core" }
 exchange-types = { path = "../exchange-types" }
 
 either = "1.9.0"
-enum-map = "2.7.0"
 num = "0.4.1"
 thiserror = "~1.0"
