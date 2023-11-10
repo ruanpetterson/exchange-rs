@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque};
 use std::ops::{Index, IndexMut};
 
@@ -25,9 +26,10 @@ impl<Order: Asset> Default for OrdersByPrice<Order> {
     }
 }
 
-impl<Order> Index<<Order as Asset>::OrderSide> for OrdersByPrice<Order>
+impl<Order, S> Index<S> for OrdersByPrice<Order>
 where
     Order: Asset<OrderSide = OrderSide>,
+    S: Borrow<<Order as Asset>::OrderSide>,
 {
     type Output = BTreeMap<
         <Order as Asset>::OrderPrice,
@@ -35,24 +37,22 @@ where
     >;
 
     #[inline]
-    fn index(&self, side: <Order as Asset>::OrderSide) -> &Self::Output {
-        match side {
+    fn index(&self, side: S) -> &Self::Output {
+        match *side.borrow() {
             OrderSide::Ask => &self.ask,
             OrderSide::Bid => &self.bid,
         }
     }
 }
 
-impl<Order> IndexMut<<Order as Asset>::OrderSide> for OrdersByPrice<Order>
+impl<Order, S> IndexMut<S> for OrdersByPrice<Order>
 where
     Order: Asset<OrderSide = OrderSide>,
+    S: Borrow<<Order as Asset>::OrderSide>,
 {
     #[inline]
-    fn index_mut(
-        &mut self,
-        side: <Order as Asset>::OrderSide,
-    ) -> &mut Self::Output {
-        match side {
+    fn index_mut(&mut self, side: S) -> &mut Self::Output {
+        match side.borrow() {
             OrderSide::Ask => &mut self.ask,
             OrderSide::Bid => &mut self.bid,
         }
