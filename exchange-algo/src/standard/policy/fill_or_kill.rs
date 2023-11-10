@@ -4,9 +4,9 @@ use num::Zero;
 use super::Policy;
 
 pub(super) struct FillOrKill;
-impl<E: Exchange> Policy<E::Order, E> for FillOrKill {
+impl<E: Exchange> Policy<E> for FillOrKill {
     #[inline]
-    fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
+    fn enforce(incoming_order: &mut E::Order, exchange: &E) {
         if incoming_order.is_fill_or_kill()
             && !FillOrKill::can_fill(incoming_order, exchange)
         {

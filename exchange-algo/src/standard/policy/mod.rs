@@ -2,20 +2,29 @@ mod fill_or_kill;
 mod immediate_or_cancel;
 mod post_only;
 
-use exchange_core::{Asset, Exchange, ExchangeExt};
+use exchange_core::{Exchange, ExchangeExt};
 
-pub(crate) trait Policy<A: Asset, E: Exchange> {
-    fn enforce(&self, order: &mut A, exchange: &E);
+use self::fill_or_kill::FillOrKill;
+use self::immediate_or_cancel::ImmediateOrCancel;
+use self::post_only::PostOnly;
+
+pub(crate) trait Policy<E: Exchange> {
+    fn enforce(order: &mut <E as Exchange>::Order, exchange: &E);
 }
 
 /// Policies that should be run before matching.
+#[inline]
 pub(super) const fn before_policies<'e, E: Exchange + ExchangeExt + 'e>(
-) -> &'e [&'e dyn Policy<E::Order, E>] {
-    &[&fill_or_kill::FillOrKill, &post_only::PostOnly]
+) -> &'e [fn(&mut <E as Exchange>::Order, &E)] {
+    &[
+        <FillOrKill as Policy<E>>::enforce,
+        <PostOnly as Policy<E>>::enforce,
+    ]
 }
 
 /// Policies that should be run after matching.
+#[inline]
 pub(super) const fn late_policies<'e, E: Exchange + ExchangeExt + 'e>(
-) -> &'e [&'e dyn Policy<E::Order, E>] {
-    &[&immediate_or_cancel::ImmediateOrCancel]
+) -> &'e [fn(&mut <E as Exchange>::Order, &E)] {
+    &[<ImmediateOrCancel as Policy<E>>::enforce]
 }
