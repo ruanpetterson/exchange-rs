@@ -1,45 +1,27 @@
+mod index;
+
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
 use either::Either;
-use enum_map::{EnumArray, EnumMap};
 use exchange_core::{Asset, Exchange, ExchangeExt};
 use exchange_types::OrderSide;
 use num::Zero;
 
-use crate::MatchingAlgo;
+use crate::standard::orderbook::index::{OrdersById, OrdersByPrice};
+use crate::standard::MatchingAlgo;
 
-pub struct Orderbook<Order: Asset, Trade>
-where
-    <Order as Asset>::OrderSide: EnumArray<
-        BTreeMap<
-            <Order as Asset>::OrderPrice,
-            VecDeque<<Order as Asset>::OrderId>,
-        >,
-    >,
-{
-    orders_by_id: BTreeMap<<Order as Asset>::OrderId, Order>,
-    orders_by_price: EnumMap<
-        <Order as Asset>::OrderSide,
-        BTreeMap<
-            <Order as Asset>::OrderPrice,
-            VecDeque<<Order as Asset>::OrderId>,
-        >,
-    >,
+pub struct Orderbook<Order: Asset, Trade> {
+    orders_by_id: OrdersById<Order>,
+    orders_by_price: OrdersByPrice<Order>,
     _trade: PhantomData<Trade>,
 }
 
 impl<Order, Trade> Orderbook<Order, Trade>
 where
     Order: Asset,
-    <Order as Asset>::OrderSide: EnumArray<
-        BTreeMap<
-            <Order as Asset>::OrderPrice,
-            VecDeque<<Order as Asset>::OrderId>,
-        >,
-    >,
 {
     #[inline]
     pub fn new() -> Self {
@@ -50,12 +32,6 @@ where
 impl<Order, Trade> Default for Orderbook<Order, Trade>
 where
     Order: Asset,
-    <Order as Asset>::OrderSide: EnumArray<
-        BTreeMap<
-            <Order as Asset>::OrderPrice,
-            VecDeque<<Order as Asset>::OrderId>,
-        >,
-    >,
 {
     #[inline]
     fn default() -> Self {
@@ -76,6 +52,7 @@ where
     type Algo = MatchingAlgo;
     type Order = Order;
 
+    #[inline]
     fn iter(
         &self,
         side: &<Self::Order as Asset>::OrderSide,
@@ -221,6 +198,7 @@ where
     Order: Asset<Trade = Trade>,
     <Order as Asset>::OrderId: Hash,
 {
+    #[inline]
     fn spread(
         &self,
     ) -> Option<(<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice)>
@@ -231,6 +209,7 @@ where
         ))
     }
 
+    #[inline]
     fn len(&self) -> (usize, usize) {
         (
             self.orders_by_price[OrderSide::Ask]
@@ -242,6 +221,7 @@ where
         )
     }
 
+    #[inline]
     fn volume(
         &self,
     ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
