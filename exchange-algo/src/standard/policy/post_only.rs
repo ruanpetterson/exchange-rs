@@ -3,9 +3,9 @@ use exchange_core::{Asset, Exchange, Opposite};
 use super::Policy;
 
 pub(super) struct PostOnly;
-impl<E: Exchange> Policy<E::Order, E> for PostOnly {
+impl<E: Exchange> Policy<E> for PostOnly {
     #[inline]
-    fn enforce(&self, incoming_order: &mut E::Order, exchange: &E) {
+    fn enforce(incoming_order: &mut E::Order, exchange: &E) {
         if incoming_order.is_post_only()
             && exchange
                 .peek(&incoming_order.side().opposite())

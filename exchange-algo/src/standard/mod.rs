@@ -15,7 +15,7 @@ impl Algo for MatchingAlgo {
     ) -> Result<(), DefaultExchangeError> {
         policy::before_policies()
             .iter()
-            .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
+            .for_each(|policy| policy(&mut incoming_order, exchange));
 
         while let (false, Some(top_order)) = (
             incoming_order.is_closed(),
@@ -38,7 +38,7 @@ impl Algo for MatchingAlgo {
 
         policy::late_policies()
             .iter()
-            .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
+            .for_each(|policy| policy(&mut incoming_order, exchange));
 
         // If incoming order is not full-filled and open, it must be inserted
         // into the orderbook.
