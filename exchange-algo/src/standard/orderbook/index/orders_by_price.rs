@@ -16,6 +16,24 @@ pub struct OrdersByPrice<Order: Asset> {
     >,
 }
 
+impl<Order: Asset> OrdersByPrice<Order>
+where
+    Order: Asset<OrderSide = OrderSide>,
+{
+    #[inline]
+    pub fn peek(
+        &self,
+        side: &<Order as Asset>::OrderSide,
+    ) -> Option<(
+        &<Order as Asset>::OrderPrice,
+        &VecDeque<<Order as Asset>::OrderId>,
+    )> {
+        match side {
+            side @ OrderSide::Ask => self[side].first_key_value(),
+            side @ OrderSide::Bid => self[side].last_key_value(),
+        }
+    }
+}
 impl<Order: Asset> Default for OrdersByPrice<Order> {
     #[inline]
     fn default() -> Self {

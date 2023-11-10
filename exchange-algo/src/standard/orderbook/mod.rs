@@ -112,7 +112,7 @@ where
             unreachable!("orders that lives in index must also be in the tree");
         };
 
-        // It prevents dangling levels (level with no orders).
+        // This prevents dangling levels (level with no orders).
         if level.get().len() == 1 {
             level.remove().pop_front()
         } else {
@@ -134,16 +134,12 @@ where
 
     #[inline]
     fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
-        let order_id = match side {
-            side @ OrderSide::Ask => {
-                self.orders_by_price[side].first_key_value()
-            }
-            side @ OrderSide::Bid => {
-                self.orders_by_price[side].last_key_value()
-            }
-        }
-        .map(|(_, level)| level)?
-        .front()?;
+        let order_id = self
+            .orders_by_price
+            .peek(side)
+            .map(|(_, level)| level)?
+            .front()
+            .expect("level should always have an order");
 
         self.orders_by_id
             .get(order_id)
@@ -153,16 +149,12 @@ where
 
     #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
-        let order_id = match side {
-            side @ OrderSide::Ask => {
-                self.orders_by_price[side].first_key_value()
-            }
-            side @ OrderSide::Bid => {
-                self.orders_by_price[side].last_key_value()
-            }
-        }
-        .map(|(_, level)| level)?
-        .front()?;
+        let order_id = self
+            .orders_by_price
+            .peek(side)
+            .map(|(_, level)| level)?
+            .front()
+            .expect("level should always have an order");
 
         self.orders_by_id
             .get_mut(order_id)
@@ -172,18 +164,18 @@ where
 
     #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
-        let order_id = match side {
+        let mut level = match side {
             side @ OrderSide::Ask => self.orders_by_price[side].first_entry(),
             side @ OrderSide::Bid => self.orders_by_price[side].last_entry(),
+        }?;
+
+        let order_id = if level.get().len() == 1 {
+            // This prevents dangling levels (level with no orders).
+            level.remove().pop_front()
+        } else {
+            level.get_mut().pop_front()
         }
-        .and_then(|mut level| {
-            // It prevents dangling levels (level with no orders).
-            if level.get().len() == 1 {
-                level.remove().pop_front()
-            } else {
-                level.get_mut().pop_front()
-            }
-        })?;
+        .expect("level should always have an order");
 
         self.orders_by_id
             .remove(&order_id)
