@@ -135,10 +135,10 @@ where
     #[inline]
     fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
         let order_id = match side {
-            &side @ OrderSide::Ask => {
+            side @ OrderSide::Ask => {
                 self.orders_by_price[side].first_key_value()
             }
-            &side @ OrderSide::Bid => {
+            side @ OrderSide::Bid => {
                 self.orders_by_price[side].last_key_value()
             }
         }
@@ -154,10 +154,10 @@ where
     #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
         let order_id = match side {
-            &side @ OrderSide::Ask => {
+            side @ OrderSide::Ask => {
                 self.orders_by_price[side].first_key_value()
             }
-            &side @ OrderSide::Bid => {
+            side @ OrderSide::Bid => {
                 self.orders_by_price[side].last_key_value()
             }
         }
@@ -173,8 +173,8 @@ where
     #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
         let order_id = match side {
-            &side @ OrderSide::Ask => self.orders_by_price[side].first_entry(),
-            &side @ OrderSide::Bid => self.orders_by_price[side].last_entry(),
+            side @ OrderSide::Ask => self.orders_by_price[side].first_entry(),
+            side @ OrderSide::Bid => self.orders_by_price[side].last_entry(),
         }
         .and_then(|mut level| {
             // It prevents dangling levels (level with no orders).
