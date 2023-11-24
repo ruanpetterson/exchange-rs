@@ -1,21 +1,19 @@
 mod index;
 
 use std::collections::btree_map::Entry;
-use std::collections::VecDeque;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use either::Either;
 use exchange_core::{Asset, Exchange, ExchangeExt};
 use exchange_types::OrderSide;
 use num::Zero;
 
-use crate::standard::orderbook::index::{OrdersById, OrdersByPrice};
+use crate::standard::orderbook::index::{OrdersById, OrdersBySide};
 use crate::standard::MatchingAlgo;
 
 pub struct Orderbook<Order: Asset, Trade> {
     orders_by_id: OrdersById<Order>,
-    orders_by_price: OrdersByPrice<Order>,
+    orders_by_side: OrdersBySide<Order>,
     _trade: PhantomData<Trade>,
 }
 
@@ -37,7 +35,7 @@ where
     fn default() -> Self {
         Self {
             orders_by_id: Default::default(),
-            orders_by_price: Default::default(),
+            orders_by_side: Default::default(),
             _trade: PhantomData,
         }
     }
@@ -64,26 +62,12 @@ where
                     .expect("every order in tree must also be in index")
             };
 
-        match side {
-            OrderSide::Ask => Either::Left(
-                self.orders_by_price[OrderSide::Ask]
-                    .values()
-                    .flat_map(VecDeque::iter)
-                    .map(order_id_to_order),
-            ),
-            OrderSide::Bid => Either::Right(
-                self.orders_by_price[OrderSide::Bid]
-                    .values()
-                    .rev()
-                    .flat_map(VecDeque::iter)
-                    .map(order_id_to_order),
-            ),
-        }
+        self.orders_by_side.iter(side).map(order_id_to_order)
     }
 
     #[inline]
     unsafe fn insert(&mut self, order: Self::Order) {
-        self.orders_by_price[order.side()]
+        self.orders_by_side[order.side()]
             .entry(
                 order
                     .limit_price()
@@ -107,7 +91,7 @@ where
             .expect("bookable orders must have a limit price");
 
         let Entry::Occupied(mut level) =
-            self.orders_by_price[order.side()].entry(limit_price)
+            self.orders_by_side[order.side()].entry(limit_price)
         else {
             unreachable!("orders that lives in index must also be in the tree");
         };
@@ -134,12 +118,7 @@ where
 
     #[inline]
     fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
-        let order_id = self
-            .orders_by_price
-            .peek(side)
-            .map(|(_, level)| level)?
-            .front()
-            .expect("level should always have an order");
+        let order_id = self.orders_by_side.peek(side)?;
 
         self.orders_by_id
             .get(order_id)
@@ -149,12 +128,7 @@ where
 
     #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
-        let order_id = self
-            .orders_by_price
-            .peek(side)
-            .map(|(_, level)| level)?
-            .front()
-            .expect("level should always have an order");
+        let order_id = self.orders_by_side.peek(side)?;
 
         self.orders_by_id
             .get_mut(order_id)
@@ -165,8 +139,8 @@ where
     #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
         let mut level = match side {
-            side @ OrderSide::Ask => self.orders_by_price[side].first_entry(),
-            side @ OrderSide::Bid => self.orders_by_price[side].last_entry(),
+            side @ OrderSide::Ask => self.orders_by_side[side].first_entry(),
+            side @ OrderSide::Bid => self.orders_by_side[side].last_entry(),
         }?;
 
         let order_id = if level.get().len() == 1 {
@@ -204,10 +178,10 @@ where
     #[inline]
     fn len(&self) -> (usize, usize) {
         (
-            self.orders_by_price[OrderSide::Ask]
+            self.orders_by_side[OrderSide::Ask]
                 .iter()
                 .fold(0, |acc, (_, level)| acc + level.len()),
-            self.orders_by_price[OrderSide::Bid]
+            self.orders_by_side[OrderSide::Bid]
                 .iter()
                 .fold(0, |acc, (_, level)| acc + level.len()),
         )

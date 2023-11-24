@@ -1,78 +1,34 @@
-use std::borrow::Borrow;
 use std::collections::{BTreeMap, VecDeque};
-use std::ops::{Index, IndexMut};
+use std::ops::{Deref, DerefMut};
 
 use exchange_core::Asset;
-use exchange_types::OrderSide;
 
-pub struct OrdersByPrice<Order: Asset> {
-    ask: BTreeMap<
-        <Order as Asset>::OrderPrice,
-        VecDeque<<Order as Asset>::OrderId>,
-    >,
-    bid: BTreeMap<
-        <Order as Asset>::OrderPrice,
-        VecDeque<<Order as Asset>::OrderId>,
-    >,
-}
+pub struct OrdersByPrice<Order: Asset>(
+    BTreeMap<<Order as Asset>::OrderPrice, VecDeque<<Order as Asset>::OrderId>>,
+);
 
-impl<Order: Asset> OrdersByPrice<Order>
-where
-    Order: Asset<OrderSide = OrderSide>,
-{
-    #[inline]
-    pub fn peek(
-        &self,
-        side: &<Order as Asset>::OrderSide,
-    ) -> Option<(
-        &<Order as Asset>::OrderPrice,
-        &VecDeque<<Order as Asset>::OrderId>,
-    )> {
-        match side {
-            side @ OrderSide::Ask => self[side].first_key_value(),
-            side @ OrderSide::Bid => self[side].last_key_value(),
-        }
-    }
-}
 impl<Order: Asset> Default for OrdersByPrice<Order> {
     #[inline]
     fn default() -> Self {
-        Self {
-            ask: Default::default(),
-            bid: Default::default(),
-        }
+        Self(Default::default())
     }
 }
 
-impl<Order, S> Index<S> for OrdersByPrice<Order>
-where
-    Order: Asset<OrderSide = OrderSide>,
-    S: Borrow<<Order as Asset>::OrderSide>,
-{
-    type Output = BTreeMap<
+impl<Order: Asset> Deref for OrdersByPrice<Order> {
+    type Target = BTreeMap<
         <Order as Asset>::OrderPrice,
         VecDeque<<Order as Asset>::OrderId>,
     >;
 
     #[inline]
-    fn index(&self, side: S) -> &Self::Output {
-        match *side.borrow() {
-            OrderSide::Ask => &self.ask,
-            OrderSide::Bid => &self.bid,
-        }
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl<Order, S> IndexMut<S> for OrdersByPrice<Order>
-where
-    Order: Asset<OrderSide = OrderSide>,
-    S: Borrow<<Order as Asset>::OrderSide>,
-{
+impl<Order: Asset> DerefMut for OrdersByPrice<Order> {
     #[inline]
-    fn index_mut(&mut self, side: S) -> &mut Self::Output {
-        match side.borrow() {
-            OrderSide::Ask => &mut self.ask,
-            OrderSide::Bid => &mut self.bid,
-        }
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
