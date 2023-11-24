@@ -35,9 +35,8 @@ impl Engine {
                 let order = Order::try_from(incoming_order).unwrap();
                 let _ = self.orderbook.matching(order);
             }
-            OrderRequest::Delete { ref order_id } => {
-                self.orderbook
-                    .remove(&OrderId::new(order_id.parse::<u64>().unwrap()));
+            OrderRequest::Delete { order_id } => {
+                self.orderbook.remove(&OrderId::new(order_id));
             }
         };
 

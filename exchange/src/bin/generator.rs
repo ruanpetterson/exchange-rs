@@ -1,23 +1,24 @@
 use std::io;
 use std::io::{Result, Write};
 
-use compact_str::{format_compact, CompactString};
+use compact_str::CompactString;
 use exchange_types::{OrderRequest, OrderSide};
 use rand::Rng;
+use uuid::Uuid;
 
 const N: usize = 10_000_000;
 
 fn main() -> Result<()> {
     let mut rng = rand::thread_rng();
     let orders = (1..=N)
-        .map(|i| match rng.gen_range(0..1_000) {
+        .map(|_| match rng.gen_range(0..1_000) {
             0 => OrderRequest::Delete {
-                order_id: format_compact!("{}", rng.gen_range(1..=i as u64)),
+                order_id: Uuid::new_v4(),
             },
             _ => OrderRequest::Create {
-                account_id: format_compact!("{}", rng.gen_range(1..100)),
+                account_id: Uuid::new_v4(),
                 amount: rng.gen_range(100..10_000).into(),
-                order_id: format_compact!("{}", i as u64),
+                order_id: Uuid::new_v4(),
                 pair: CompactString::new_inline("BTC/USDC"),
                 limit_price: rng.gen_range(100..10_000).into(),
                 side: match rng.gen_range(0..2) {

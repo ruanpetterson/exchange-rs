@@ -1,6 +1,7 @@
 use compact_str::CompactString;
 use rust_decimal::{prelude::ToPrimitive, Decimal};
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::{Order, OrderId, OrderSide};
 
@@ -14,15 +15,15 @@ pub enum OrderRequestError {
 #[cfg_attr(feature = "serde", serde(tag = "type_op", rename_all = "UPPERCASE"))]
 pub enum OrderRequest {
     Create {
-        account_id: CompactString,
+        account_id: Uuid,
         amount: Decimal,
-        order_id: CompactString,
+        order_id: Uuid,
         pair: CompactString,
         limit_price: Decimal,
         side: OrderSide,
     },
     Delete {
-        order_id: CompactString,
+        order_id: Uuid,
     },
 }
 
@@ -39,7 +40,7 @@ impl TryFrom<OrderRequest> for Order {
                 side,
                 ..
             } => Ok(Order::new_limit(
-                OrderId::new(order_id.parse::<u64>().unwrap()),
+                OrderId::new(order_id),
                 side,
                 limit_price.trunc().to_u64().unwrap() * 100
                     + limit_price.fract().to_u64().unwrap(),

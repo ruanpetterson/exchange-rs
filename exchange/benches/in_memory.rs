@@ -5,20 +5,21 @@ use criterion::{
 use exchange_rt::Engine;
 use exchange_types::{OrderRequest, OrderSide};
 use rand::Rng;
+use uuid::Uuid;
 
 const PAIR: &'static str = "BENCH";
 
 pub fn in_memory(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
 
-    let mut orders = (1..).map(|i| match rng.gen_range(0..1_000) {
+    let mut orders = (1..).map(|_| match rng.gen_range(0..1_000) {
         0 => OrderRequest::Delete {
-            order_id: format_compact!("{}", rng.gen_range(1..=i as u64)),
+            order_id: Uuid::new_v4(),
         },
         _ => OrderRequest::Create {
             account_id: format_compact!("{}", rng.gen_range(1..100)),
             amount: rng.gen_range(100..10_000).into(),
-            order_id: format_compact!("{}", i as u64),
+            order_id: Uuid::new_v4(),
             pair: CompactString::new_inline(PAIR),
             limit_price: rng.gen_range(100..10_000).into(),
             side: match rng.gen_range(0..2) {
