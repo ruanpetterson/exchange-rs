@@ -1,11 +1,15 @@
 use std::error::Error;
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 use num::Zero;
 
 pub trait Asset<Order = Self>: PartialOrd {
     /// Order amount.
-    type OrderAmount: Add<Output = Self::OrderAmount> + Copy + Ord + Zero;
+    type OrderAmount: Add<Output = Self::OrderAmount>
+        + Sub<Output = Self::OrderAmount>
+        + Copy
+        + Ord
+        + Zero;
     /// Order unique identifier.
     type OrderId: Copy + Eq + Ord;
     /// Order price.

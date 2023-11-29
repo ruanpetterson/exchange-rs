@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use exchange_core::{Asset, Exchange, Opposite};
 use num::Zero;
 
@@ -25,6 +27,11 @@ impl FillOrKill {
     /// `incoming_order` is the order you want to check if it can be filled,
     /// and `exchange` is the orderbook that we'll use to compare against
     /// the given order.
+    ///
+    /// `can_fill()` is short-circuiting; in other words, it will stop
+    /// processing as soon as it ensures the given order can be full-filled,
+    /// given that no matter what else happens, the result will also be
+    /// `true`.
     #[inline]
     fn can_fill<E: Exchange>(incoming_order: &E::Order, exchange: &E) -> bool {
         exchange
@@ -35,8 +42,23 @@ impl FillOrKill {
                 order.matches(incoming_order).is_ok()
             })
             .map(<E::Order as Asset>::remaining)
-            .reduce(|curr, acc| curr + acc)
-            .unwrap_or_else(Zero::zero)
-            >= incoming_order.remaining()
+            .try_fold(
+                incoming_order.remaining(),
+                |mut remaining, available_to_trade| {
+                    remaining = remaining - available_to_trade.min(remaining);
+
+                    // This means that the `incoming_order` can be fully
+                    // filled.
+                    if remaining.is_zero() {
+                        // Using `ControlFlow` make this call short-circuiting;
+                        // in other words, it will stop processing as soon as
+                        // the closure returns `ControlFlow::Break`.
+                        return ControlFlow::Break(remaining);
+                    }
+
+                    ControlFlow::Continue(remaining)
+                },
+            )
+            .is_break()
     }
 }
