@@ -1,4 +1,4 @@
-use compact_str::{format_compact, CompactString};
+use compact_str::CompactString;
 use criterion::{
     black_box, criterion_group, criterion_main, BatchSize, Criterion,
 };
@@ -17,7 +17,7 @@ pub fn in_memory(c: &mut Criterion) {
             order_id: Uuid::new_v4(),
         },
         _ => OrderRequest::Create {
-            account_id: format_compact!("{}", rng.gen_range(1..100)),
+            account_id: Uuid::new_v4(),
             amount: rng.gen_range(100..10_000).into(),
             order_id: Uuid::new_v4(),
             pair: CompactString::new_inline(PAIR),
