@@ -12,6 +12,7 @@ impl OrderId {
     }
 
     #[inline]
+    #[cfg(feature = "test")]
     pub fn random() -> Self {
         Self(Uuid::new_v4())
     }

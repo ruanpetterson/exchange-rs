@@ -10,3 +10,6 @@ exchange-types = { path = "../exchange-types" }
 either = "1.9.0"
 num = "0.4.1"
 thiserror = "~1.0"
+
+[dev-dependencies]
+exchange-types = { path = "../exchange-types", features = ["test"] }
