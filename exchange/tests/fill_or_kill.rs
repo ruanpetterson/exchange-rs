@@ -1,7 +1,7 @@
 use exchange_algo::Orderbook;
 use exchange_core::Exchange;
-use exchange_types::{Order, OrderId, OrderSide, OrderType, TimeInForce};
-use tap::{Pipe, Tap};
+use exchange_types::{Order, OrderSide};
+use tap::Tap;
 
 #[test]
 fn valid_match() {
@@ -14,20 +14,12 @@ fn valid_match() {
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let fill_or_kill = OrderId::random().pipe(|order_id| {
-        Order::new(
-            order_id,
-            OrderSide::Bid,
-            OrderType::Limit {
-                limit_price: 100,
-                time_in_force: TimeInForce::ImmediateOrCancel {
-                    all_or_none: true,
-                },
-                amount: 100,
-                filled: 0,
-            },
-        )
-    });
+    let fill_or_kill = Order::builder()
+        .side(OrderSide::Bid)
+        .limit(100, 100)
+        .ioc()
+        .all_or_none()
+        .build();
 
     assert!(exchange.matching(fill_or_kill).is_ok());
 }
@@ -41,20 +33,12 @@ fn invalid_match() {
         assert!(exchange.matching(limit_order).is_ok());
     });
 
-    let fill_or_kill = OrderId::random().pipe(|order_id| {
-        Order::new(
-            order_id,
-            OrderSide::Bid,
-            OrderType::Limit {
-                limit_price: 100,
-                time_in_force: TimeInForce::ImmediateOrCancel {
-                    all_or_none: true,
-                },
-                amount: 100,
-                filled: 0,
-            },
-        )
-    });
+    let fill_or_kill = Order::builder()
+        .side(OrderSide::Bid)
+        .limit(100, 100)
+        .ioc()
+        .all_or_none()
+        .build();
 
     assert!(exchange.matching(fill_or_kill).is_ok());
 }

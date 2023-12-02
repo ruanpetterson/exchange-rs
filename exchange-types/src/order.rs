@@ -271,29 +271,49 @@ pub enum OrderError {
 
 #[cfg(any(test, feature = "test"))]
 mod builder {
+    use std::hint::unreachable_unchecked;
+    use std::marker::PhantomData;
+    use std::mem::MaybeUninit;
+
     use super::*;
 
-    pub struct Builder<T, S> {
+    pub struct Builder<S, T> {
         side: S,
-        type_: T,
+        type_: MaybeUninit<OrderType>,
+        type_variant: PhantomData<T>,
     }
+
+    pub enum Limit<T> {
+        Subtype(PhantomData<T>),
+    }
+
+    pub enum Gtc {}
+    pub enum Ioc {}
+
+    pub enum Market {}
+
+    pub trait TypeVariant {}
+    impl<T> TypeVariant for Limit<T> {}
+    impl TypeVariant for Market {}
 
     impl Builder<(), ()> {
         #[inline]
         pub const fn new() -> Self {
             Self {
                 side: (),
-                type_: (),
+                type_: MaybeUninit::uninit(),
+                type_variant: PhantomData,
             }
         }
     }
 
-    impl<T, S> Builder<T, S> {
+    impl<S, T> Builder<S, T> {
         #[inline]
-        pub fn side(self, side: OrderSide) -> Builder<T, OrderSide> {
+        pub fn side(self, side: OrderSide) -> Builder<OrderSide, T> {
             Builder {
                 side,
                 type_: self.type_,
+                type_variant: self.type_variant,
             }
         }
 
@@ -302,35 +322,197 @@ mod builder {
             self,
             limit_price: u64,
             amount: u64,
-        ) -> Builder<OrderType, S> {
+        ) -> Builder<S, Limit<Gtc>> {
+            let type_ = OrderType::Limit {
+                limit_price,
+                time_in_force: TimeInForce::default(),
+                amount,
+                filled: 0,
+            };
+
             Builder {
                 side: self.side,
-                type_: OrderType::Limit {
-                    limit_price,
-                    time_in_force: TimeInForce::default(),
-                    amount,
-                    filled: 0,
-                },
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+
+        #[inline]
+        pub fn market(self, amount: u64) -> Builder<S, Market> {
+            let type_ = OrderType::Market {
+                all_or_none: false,
+                amount,
+                filled: 0,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
             }
         }
     }
 
-    impl Builder<OrderType, OrderSide> {
+    impl<T> Builder<OrderSide, Limit<T>> {
+        #[inline]
+        pub fn gtc(self) -> Builder<OrderSide, Limit<Gtc>> {
+            let OrderType::Limit {
+                limit_price,
+                time_in_force: _,
+                amount,
+                filled,
+            } = self.type_()
+            else {
+                // SAFETY: this is guaranteed by the type system.
+                unsafe { unreachable_unchecked() }
+            };
+
+            let type_ = OrderType::Limit {
+                limit_price,
+                time_in_force: TimeInForce::GoodTilCancel { post_only: false },
+                amount,
+                filled,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+
+        #[inline]
+        pub fn ioc(self) -> Builder<OrderSide, Limit<Ioc>> {
+            let OrderType::Limit {
+                limit_price,
+                time_in_force: _,
+                amount,
+                filled,
+            } = self.type_()
+            else {
+                // SAFETY: this is guaranteed by the type system.
+                unsafe { unreachable_unchecked() }
+            };
+
+            let type_ = OrderType::Limit {
+                limit_price,
+                time_in_force: TimeInForce::ImmediateOrCancel {
+                    all_or_none: false,
+                },
+                amount,
+                filled,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+    }
+
+    impl Builder<OrderSide, Limit<Gtc>> {
+        #[inline]
+        pub fn post_only(self) -> Builder<OrderSide, Limit<Gtc>> {
+            let OrderType::Limit {
+                limit_price,
+                time_in_force: _,
+                amount,
+                filled,
+            } = self.type_()
+            else {
+                // SAFETY: this is guaranteed by the type system.
+                unsafe { unreachable_unchecked() }
+            };
+
+            let type_ = OrderType::Limit {
+                limit_price,
+                time_in_force: TimeInForce::GoodTilCancel { post_only: true },
+                amount,
+                filled,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+    }
+
+    impl Builder<OrderSide, Limit<Ioc>> {
+        #[inline]
+        pub fn all_or_none(self) -> Builder<OrderSide, Limit<Ioc>> {
+            let OrderType::Limit {
+                limit_price,
+                time_in_force: _,
+                amount,
+                filled,
+            } = self.type_()
+            else {
+                // SAFETY: this is guaranteed by the type system.
+                unsafe { unreachable_unchecked() }
+            };
+
+            let type_ = OrderType::Limit {
+                limit_price,
+                time_in_force: TimeInForce::ImmediateOrCancel {
+                    all_or_none: true,
+                },
+                amount,
+                filled,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+    }
+
+    impl Builder<OrderSide, Market> {
+        pub fn all_or_none(self) -> Builder<OrderSide, Market> {
+            let OrderType::Market {
+                all_or_none: _,
+                amount,
+                filled,
+            } = self.type_()
+            else {
+                // SAFETY: this is guaranteed by the type system.
+                unsafe { unreachable_unchecked() }
+            };
+
+            let type_ = OrderType::Market {
+                all_or_none: true,
+                amount,
+                filled,
+            };
+
+            Builder {
+                side: self.side,
+                type_: MaybeUninit::new(type_),
+                type_variant: PhantomData,
+            }
+        }
+    }
+
+    impl<T: TypeVariant> Builder<OrderSide, T> {
+        #[inline]
+        fn type_(&self) -> OrderType {
+            // SAFETY: whenever a `T` that implements `TypeVariant` is set, the
+            // `Builder::type_` is initialized.
+            unsafe { self.type_.assume_init() }
+        }
+
         #[inline]
         pub fn build(self) -> Order {
             Order {
                 id: OrderId::random(),
                 side: self.side,
-                type_: self.type_,
+                type_: self.type_(),
                 status: OrderStatus::Open,
             }
-        }
-    }
-
-    impl From<Builder<OrderType, OrderSide>> for Order {
-        #[inline]
-        fn from(builder: Builder<OrderType, OrderSide>) -> Self {
-            builder.build()
         }
     }
 }
