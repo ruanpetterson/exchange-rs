@@ -31,6 +31,13 @@ impl Order {
     }
 
     #[inline]
+    #[cfg(any(test, feature = "test"))]
+    pub fn builder() -> builder::Builder<(), ()> {
+        builder::Builder::new()
+    }
+
+    #[inline]
+    #[deprecated]
     pub fn new_limit(
         id: OrderId,
         side: OrderSide,
@@ -262,20 +269,85 @@ pub enum OrderError {
     NoFill,
 }
 
+#[cfg(any(test, feature = "test"))]
+mod builder {
+    use super::*;
+
+    pub struct Builder<T, S> {
+        side: S,
+        type_: T,
+    }
+
+    impl Builder<(), ()> {
+        #[inline]
+        pub const fn new() -> Self {
+            Self {
+                side: (),
+                type_: (),
+            }
+        }
+    }
+
+    impl<T, S> Builder<T, S> {
+        #[inline]
+        pub fn side(self, side: OrderSide) -> Builder<T, OrderSide> {
+            Builder {
+                side,
+                type_: self.type_,
+            }
+        }
+
+        #[inline]
+        pub fn limit(
+            self,
+            limit_price: u64,
+            amount: u64,
+        ) -> Builder<OrderType, S> {
+            Builder {
+                side: self.side,
+                type_: OrderType::Limit {
+                    limit_price,
+                    time_in_force: TimeInForce::default(),
+                    amount,
+                    filled: 0,
+                },
+            }
+        }
+    }
+
+    impl Builder<OrderType, OrderSide> {
+        #[inline]
+        pub fn build(self) -> Order {
+            Order {
+                id: OrderId::random(),
+                side: self.side,
+                type_: self.type_,
+                status: OrderStatus::Open,
+            }
+        }
+    }
+
+    impl From<Builder<OrderType, OrderSide>> for Order {
+        #[inline]
+        fn from(builder: Builder<OrderType, OrderSide>) -> Self {
+            builder.build()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     mod valid_trades {
-
         use super::*;
 
         #[test]
         fn same_prices() {
             let mut ask =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
             let mut bid =
-                Order::new_limit(OrderId::random(), OrderSide::Bid, 10, 10);
+                Order::builder().side(OrderSide::Bid).limit(10, 10).build();
 
             assert!(ask.trade(&mut bid).is_ok());
         }
@@ -283,9 +355,9 @@ mod tests {
         #[test]
         fn different_prices() {
             let mut ask =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
             let mut bid =
-                Order::new_limit(OrderId::random(), OrderSide::Bid, 20, 10);
+                Order::builder().side(OrderSide::Bid).limit(20, 10).build();
 
             assert!(ask.trade(&mut bid).is_ok());
         }
@@ -293,9 +365,9 @@ mod tests {
         #[test]
         fn partial_maker() {
             let mut ask =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 5);
+                Order::builder().side(OrderSide::Ask).limit(10, 5).build();
             let mut bid =
-                Order::new_limit(OrderId::random(), OrderSide::Bid, 20, 10);
+                Order::builder().side(OrderSide::Bid).limit(20, 10).build();
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(ask.is_closed());
@@ -305,9 +377,9 @@ mod tests {
         #[test]
         fn partial_taker() {
             let mut ask =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
             let mut bid =
-                Order::new_limit(OrderId::random(), OrderSide::Bid, 20, 5);
+                Order::builder().side(OrderSide::Bid).limit(20, 5).build();
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(!ask.is_closed());
@@ -321,9 +393,9 @@ mod tests {
         #[test]
         fn same_side() {
             let mut ask_1 =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
             let mut ask_2 =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
 
             assert!(ask_1.trade(&mut ask_2).is_err());
         }
@@ -331,9 +403,9 @@ mod tests {
         #[test]
         fn incompatible_prices() {
             let mut ask =
-                Order::new_limit(OrderId::random(), OrderSide::Ask, 20, 10);
+                Order::builder().side(OrderSide::Ask).limit(20, 10).build();
             let mut bid =
-                Order::new_limit(OrderId::random(), OrderSide::Bid, 10, 10);
+                Order::builder().side(OrderSide::Bid).limit(10, 10).build();
 
             assert!(ask.trade(&mut bid).is_err());
         }
@@ -342,7 +414,7 @@ mod tests {
     #[test]
     fn cancel_order() {
         let mut ask =
-            Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+            Order::builder().side(OrderSide::Ask).limit(10, 10).build();
         ask.cancel();
         assert_eq!(ask.status(), OrderStatus::Cancelled);
     }
@@ -350,9 +422,9 @@ mod tests {
     #[test]
     fn close_order() {
         let mut ask =
-            Order::new_limit(OrderId::random(), OrderSide::Ask, 10, 10);
+            Order::builder().side(OrderSide::Ask).limit(10, 10).build();
         let mut bid =
-            Order::new_limit(OrderId::random(), OrderSide::Bid, 10, 5);
+            Order::builder().side(OrderSide::Bid).limit(10, 5).build();
 
         assert!(ask.trade(&mut bid).is_ok());
 

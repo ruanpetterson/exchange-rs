@@ -3,7 +3,7 @@ use rust_decimal::{prelude::ToPrimitive, Decimal};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{Order, OrderId, OrderSide};
+use crate::{Order, OrderId, OrderSide, OrderType, TimeInForce};
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {
@@ -39,13 +39,17 @@ impl TryFrom<OrderRequest> for Order {
                 limit_price,
                 side,
                 ..
-            } => Ok(Order::new_limit(
+            } => Ok(Order::new(
                 OrderId::new(order_id),
                 side,
-                limit_price.trunc().to_u64().unwrap() * 100
-                    + limit_price.fract().to_u64().unwrap(),
-                amount.trunc().to_u64().unwrap() * 100
-                    + amount.fract().to_u64().unwrap(),
+                OrderType::Limit {
+                    limit_price: limit_price.trunc().to_u64().unwrap() * 100
+                        + limit_price.fract().to_u64().unwrap(),
+                    time_in_force: TimeInForce::default(),
+                    amount: amount.trunc().to_u64().unwrap() * 100
+                        + amount.fract().to_u64().unwrap(),
+                    filled: 0,
+                },
             )),
             OrderRequest::Delete { .. } => Err(OrderRequestError::MismatchType),
         }
