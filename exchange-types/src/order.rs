@@ -31,6 +31,13 @@ impl Order {
     }
 
     #[inline]
+    #[cfg(any(test, feature = "test"))]
+    pub fn builder() -> builder::Builder<(), ()> {
+        builder::Builder::new()
+    }
+
+    #[inline]
+    #[deprecated]
     pub fn new_limit(
         id: OrderId,
         side: OrderSide,
@@ -260,6 +267,72 @@ pub enum OrderError {
     Overfill,
     #[error("empty filling is not allowed")]
     NoFill,
+}
+
+#[cfg(any(test, feature = "test"))]
+mod builder {
+    use super::*;
+
+    pub struct Builder<T, S> {
+        side: S,
+        type_: T,
+    }
+
+    impl Builder<(), ()> {
+        #[inline]
+        pub const fn new() -> Self {
+            Self {
+                side: (),
+                type_: (),
+            }
+        }
+    }
+
+    impl<T, S> Builder<T, S> {
+        #[inline]
+        pub fn side(self, side: OrderSide) -> Builder<T, OrderSide> {
+            Builder {
+                side,
+                type_: self.type_,
+            }
+        }
+
+        #[inline]
+        pub fn limit(
+            self,
+            limit_price: u64,
+            amount: u64,
+        ) -> Builder<OrderType, S> {
+            Builder {
+                side: self.side,
+                type_: OrderType::Limit {
+                    limit_price,
+                    time_in_force: TimeInForce::default(),
+                    amount,
+                    filled: 0,
+                },
+            }
+        }
+    }
+
+    impl Builder<OrderType, OrderSide> {
+        #[inline]
+        pub fn build(self) -> Order {
+            Order {
+                id: OrderId::random(),
+                side: self.side,
+                type_: self.type_,
+                status: OrderStatus::Open,
+            }
+        }
+    }
+
+    impl From<Builder<OrderType, OrderSide>> for Order {
+        #[inline]
+        fn from(builder: Builder<OrderType, OrderSide>) -> Self {
+            builder.build()
+        }
+    }
 }
 
 #[cfg(test)]
