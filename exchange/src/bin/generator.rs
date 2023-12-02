@@ -1,38 +1,68 @@
 use std::io;
 use std::io::{Result, Write};
 
+use clap::Parser;
 use compact_str::CompactString;
+use crossbeam::channel::Sender;
 use exchange_types::{OrderRequest, OrderSide};
 use rand::Rng;
+use rayon::prelude::*;
 use uuid::Uuid;
 
-const N: usize = 10_000_000;
+#[derive(Parser)]
+struct Args {
+    #[clap(short = 'n', default_value_t = 10_000_000)]
+    total: usize,
+}
 
 fn main() -> Result<()> {
-    let mut rng = rand::thread_rng();
-    let orders = (1..=N)
-        .map(|_| match rng.gen_range(0..1_000) {
-            0 => OrderRequest::Delete {
-                order_id: Uuid::new_v4(),
-            },
-            _ => OrderRequest::Create {
-                account_id: Uuid::new_v4(),
-                amount: rng.gen_range(100..10_000).into(),
-                order_id: Uuid::new_v4(),
-                pair: CompactString::new_inline("BTC/USDC"),
-                limit_price: rng.gen_range(100..10_000).into(),
-                side: match rng.gen_range(0..2) {
-                    0 => OrderSide::Ask,
-                    _ => OrderSide::Bid,
-                },
-            },
+    let Args { total } = Args::parse();
+
+    let (tx, rx) = crossbeam::channel::bounded(1024);
+
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(2)
+        .build()
+        .unwrap();
+
+    pool.spawn(move || {
+        (0..total).into_par_iter().for_each(move |_| {
+            let tx = tx.clone();
+            worker(tx);
         })
-        .filter_map(|order| serde_json::to_string(&order).ok());
+    });
 
     let mut stdout = io::stdout();
-    for order in orders {
+    while let Ok(order) = rx.recv() {
         writeln!(stdout, "{}", order)?;
     }
 
     Ok(())
+}
+
+fn worker(tx: Sender<String>) {
+    let mut rng = rand::thread_rng();
+
+    let order = match rng.gen_range(0..1_000) {
+        0 => OrderRequest::Delete {
+            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+        },
+        _ => OrderRequest::Create {
+            account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+            amount: rng.gen_range(100..10_000).into(),
+            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+            pair: CompactString::new_inline("BTC/USDC"),
+            limit_price: rng.gen_range(100..10_000).into(),
+            side: match rng.gen_range(0..2) {
+                0 => OrderSide::Ask,
+                _ => OrderSide::Bid,
+            },
+        },
+    };
+
+    let Ok(serialized_order) = serde_json::to_string(&order) else {
+        return;
+    };
+
+    let _ = tx.send(serialized_order);
 }
