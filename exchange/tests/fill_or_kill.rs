@@ -6,8 +6,10 @@ use tap::{Pipe, Tap};
 #[test]
 fn valid_match() {
     let mut exchange = Orderbook::new().tap_mut(|exchange| {
-        let order_id = OrderId::random();
-        let limit_order = Order::new_limit(order_id, OrderSide::Ask, 100, 100);
+        let limit_order = Order::builder()
+            .side(OrderSide::Ask)
+            .limit(100, 100)
+            .build();
 
         assert!(exchange.matching(limit_order).is_ok());
     });
@@ -33,8 +35,8 @@ fn valid_match() {
 #[test]
 fn invalid_match() {
     let mut exchange = Orderbook::new().tap_mut(|exchange| {
-        let order_id = OrderId::random();
-        let limit_order = Order::new_limit(order_id, OrderSide::Ask, 100, 10);
+        let limit_order =
+            Order::builder().side(OrderSide::Ask).limit(100, 10).build();
 
         assert!(exchange.matching(limit_order).is_ok());
     });
