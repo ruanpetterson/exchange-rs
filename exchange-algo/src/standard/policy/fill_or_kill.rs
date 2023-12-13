@@ -41,7 +41,7 @@ impl FillOrKill {
                 // `incoming_order`.
                 order.matches(incoming_order).is_ok()
             })
-            .map(<E::Order as Asset>::remaining)
+            .map(|order| order.remaining())
             .try_fold(
                 incoming_order.remaining(),
                 |mut remaining, available_to_trade| {

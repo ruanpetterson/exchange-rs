@@ -49,12 +49,14 @@ where
 {
     type Algo = MatchingAlgo;
     type Order = Order;
+    type OrderRef<'e> = &'e Order where Self: 'e;
+    type OrderRefMut<'e> = &'e mut Order where Self: 'e;
 
     #[inline]
     fn iter(
         &self,
         side: &<Self::Order as Asset>::OrderSide,
-    ) -> impl Iterator<Item = &Self::Order> {
+    ) -> impl Iterator<Item = Self::OrderRef<'_>> + '_ {
         let order_id_to_order =
             |order_id: &<Order as Asset>::OrderId| -> &Order {
                 self.orders_by_id
@@ -117,7 +119,7 @@ where
     }
 
     #[inline]
-    fn peek(&self, side: &OrderSide) -> Option<&Self::Order> {
+    fn peek(&self, side: &OrderSide) -> Option<Self::OrderRef<'_>> {
         let order_id = self.orders_by_side.peek(side)?;
 
         self.orders_by_id
@@ -127,7 +129,7 @@ where
     }
 
     #[inline]
-    fn peek_mut(&mut self, side: &OrderSide) -> Option<&mut Self::Order> {
+    fn peek_mut(&mut self, side: &OrderSide) -> Option<Self::OrderRefMut<'_>> {
         let order_id = self.orders_by_side.peek(side)?;
 
         self.orders_by_id

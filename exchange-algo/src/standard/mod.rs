@@ -9,30 +9,42 @@ impl Algo for MatchingAlgo {
     type Output = ();
 
     #[inline]
-    fn matching<E: Exchange + ExchangeExt>(
+    fn matching<E>(
         exchange: &mut E,
         mut incoming_order: <E as Exchange>::Order,
-    ) -> Result<(), DefaultExchangeError> {
+    ) -> Result<(), DefaultExchangeError>
+    where
+        E: Exchange + ExchangeExt,
+    {
         policy::before_policies()
             .iter()
             .for_each(|policy| policy(&mut incoming_order, exchange));
 
-        while let (false, Some(top_order)) = (
-            incoming_order.is_closed(),
-            exchange.peek_mut(&incoming_order.side().opposite()),
-        ) {
-            let Ok(_trade) = incoming_order.trade(top_order) else {
-                // Since incoming order is not matching to top order anymore, we
-                // can move on.
+        while !incoming_order.is_closed() {
+            let Some(mut top_order) =
+                exchange.peek_mut(&incoming_order.side().opposite())
+            else {
+                // Since there is no opposite order anymore, we can move on.
+                break;
+            };
+
+            let Ok(_trade) = incoming_order.trade(&mut *top_order) else {
+                // Since incoming order is not matching to top order
+                // anymore, we can also move on.
                 break;
             };
 
             if top_order.is_closed() {
+                let top_order_id = top_order.id();
+
+                // We must explicity drop to reuse the `exchange`.
+                drop(top_order);
+
                 // As long as top order is completed, it can be safely removed
                 // from orderbook.
                 exchange
-                    .pop(&incoming_order.side().opposite())
-                    .expect("top order should be `Some`");
+                    .remove(&top_order_id)
+                    .expect("order should be `Some`");
             }
         }
 

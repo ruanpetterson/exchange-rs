@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use crate::{Algo, Asset};
 
 pub type Spread<Order> =
@@ -9,15 +11,21 @@ pub type Volume<Order> =
 ///
 /// This is the core trait for exchange implementation.
 pub trait Exchange {
-    /// The type of order that will be stored in the exchange.
     type Algo: Algo;
+    /// The type of order that will be stored in the exchange.
     type Order: Asset;
+    type OrderRef<'e>: Deref<Target = Self::Order>
+    where
+        Self: 'e;
+    type OrderRefMut<'e>: DerefMut<Target = Self::Order>
+    where
+        Self: 'e;
 
     // Returns an iterator over the given side of the exchange.
     fn iter(
         &self,
         side: &<Self::Order as Asset>::OrderSide,
-    ) -> impl Iterator<Item = &Self::Order>;
+    ) -> impl Iterator<Item = Self::OrderRef<'_>> + '_;
 
     /// Inserts an order into the exchange.
     ///
@@ -41,13 +49,13 @@ pub trait Exchange {
     fn peek(
         &self,
         side: &<Self::Order as Asset>::OrderSide,
-    ) -> Option<&Self::Order>;
+    ) -> Option<Self::OrderRef<'_>>;
 
     /// Returns a mutable reference of the most relevant order in the exchange.
     fn peek_mut(
         &mut self,
         side: &<Self::Order as Asset>::OrderSide,
-    ) -> Option<&mut Self::Order>;
+    ) -> Option<Self::OrderRefMut<'_>>;
 
     /// Removes the most relevant order in the exchange.
     fn pop(
