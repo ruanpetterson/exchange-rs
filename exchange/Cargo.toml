@@ -5,8 +5,14 @@ edition = "2021"
 default-run = "exchange"
 
 [features]
-default = ["serde"]
-serde = ["dep:serde", "dep:serde_json"]
+default = ["rand", "serde"]
+rand = ["dep:rand", "exchange-types/rand"]
+serde = [
+    "dep:serde",
+    "dep:serde_json",
+    "exchange-rt/serde",
+    "exchange-types/serde",
+]
 
 [dependencies]
 exchange-algo = { path = "../exchange-algo" }
@@ -20,7 +26,7 @@ compact_str = { version = "0.7.1", features = ["serde"] }
 crossbeam = { version = "0.8.2", features = ["crossbeam-channel"] }
 mimalloc = { version = "0.1.39", default-features = false }
 owo-colors = "3.5.0"
-rand = "0.8.5"
+rand = { version = "0.8.5", optional = true }
 rayon = "1.8.0"
 rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }
@@ -30,6 +36,7 @@ uuid = { version = "1.5.0", features = ["rand", "v4"] }
 
 [dev-dependencies]
 exchange-algo = { path = "../exchange-algo", features = ["test"] }
+exchange-types = { path = "../exchange-types", features = ["test"] }
 
 criterion = "0.5.1"
 insta = "1.34.0"
@@ -39,7 +46,7 @@ tap = "1.0.1"
 
 [[bin]]
 name = "generator"
-required-features = ["serde"]
+required-features = ["rand", "serde"]
 
 [[bench]]
 name = "in_memory"

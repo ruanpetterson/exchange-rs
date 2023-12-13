@@ -491,6 +491,25 @@ mod builder {
     }
 }
 
+#[cfg(feature = "rand")]
+mod __rand {
+    use rand::distributions::Standard;
+    use rand::prelude::*;
+
+    use super::*;
+
+    impl Distribution<Order> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Order {
+            Order {
+                id: rng.gen(),
+                side: rng.gen(),
+                type_: rng.gen(),
+                status: OrderStatus::Open,
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use exchange_core::Trade as _;

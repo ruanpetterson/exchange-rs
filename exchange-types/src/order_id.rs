@@ -31,3 +31,18 @@ impl From<&Uuid> for OrderId {
         Self::new(*uuid)
     }
 }
+
+#[cfg(feature = "rand")]
+mod __rand {
+    use rand::distributions::Standard;
+    use rand::prelude::*;
+
+    use super::*;
+
+    impl Distribution<OrderId> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OrderId {
+            let uuid = Uuid::from_bytes(rng.gen());
+            OrderId::from(uuid)
+        }
+    }
+}

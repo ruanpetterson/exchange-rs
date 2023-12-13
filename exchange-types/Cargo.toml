@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["serde"]
+rand = ["dep:rand", "rust_decimal/rand"]
 serde = ["dep:serde", "compact_str/serde", "uuid/serde"]
 test = ["uuid/v4"]
 
@@ -15,6 +15,7 @@ exchange-core = { path = "../exchange-core" }
 
 compact_str = "0.7.1"
 num = "0.4.1"
+rand = { version = "0.8.5", optional = true }
 rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }
 thiserror = "~1.0"
@@ -22,4 +23,5 @@ uuid = "1.5.0"
 
 [dev-dependencies]
 rust_decimal_macros = "1.33.1"
+serde_json = "1"
 uuid = { version = "1.5.0", features = ["v4"] }

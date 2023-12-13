@@ -4,10 +4,10 @@ use std::io::{Result, Write};
 use clap::Parser;
 use compact_str::CompactString;
 use crossbeam::channel::Sender;
-use exchange_types::{OrderRequest, OrderSide};
+use exchange_rt::Request;
+use exchange_types::Order;
 use rand::Rng;
 use rayon::prelude::*;
-use uuid::Uuid;
 
 #[derive(Parser)]
 struct Args {
@@ -44,19 +44,12 @@ fn worker(tx: Sender<String>) {
     let mut rng = rand::thread_rng();
 
     let order = match rng.gen_range(0..1_000) {
-        0 => OrderRequest::Delete {
-            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+        0 => Request::Delete {
+            order_id: rng.gen(),
         },
-        _ => OrderRequest::Create {
-            account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-            amount: rng.gen_range(100..10_000).into(),
-            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+        _ => Request::Create {
             pair: CompactString::new_inline("BTC/USDC"),
-            limit_price: rng.gen_range(100..10_000).into(),
-            side: match rng.gen_range(0..2) {
-                0 => OrderSide::Ask,
-                _ => OrderSide::Bid,
-            },
+            order: rng.gen::<Order>(),
         },
     };
 

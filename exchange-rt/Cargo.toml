@@ -3,6 +3,9 @@ name = "exchange-rt"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+serde = ["dep:serde", "exchange-types/serde"]
+
 [dependencies]
 exchange-algo = { path = "../exchange-algo" }
 exchange-core = { path = "../exchange-core" }
@@ -13,3 +16,6 @@ rust_decimal = "1.29.1"
 serde = { version = "~1.0", features = ["derive"], optional = true }
 serde_json = { version = "~1.0", optional = true }
 thiserror = "~1.0"
+
+[dev-dependencies]
+serde_json = "~1.0"

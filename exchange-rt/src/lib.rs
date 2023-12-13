@@ -1,8 +1,11 @@
 use compact_str::CompactString;
 use exchange_algo::Orderbook;
 use exchange_core::Exchange;
-use exchange_types::{Order, OrderId, OrderRequest};
+use exchange_types::Order;
 use thiserror::Error;
+
+mod request;
+pub use request::Request;
 
 pub struct Engine {
     pair: CompactString,
@@ -21,10 +24,10 @@ impl Engine {
     #[inline]
     pub fn process(
         &mut self,
-        incoming_order: OrderRequest,
+        incoming_order: Request<Order>,
     ) -> Result<(), EngineError> {
         match incoming_order {
-            OrderRequest::Create { ref pair, .. } => {
+            Request::Create { ref pair, order } => {
                 if pair != &self.pair {
                     Err(PairError::Mismatch {
                         expected: self.pair.clone(),
@@ -32,11 +35,10 @@ impl Engine {
                     })?;
                 }
 
-                let order = Order::try_from(incoming_order).unwrap();
                 let _ = self.orderbook.matching(order);
             }
-            OrderRequest::Delete { order_id } => {
-                self.orderbook.remove(&OrderId::new(order_id));
+            Request::Delete { order_id } => {
+                self.orderbook.remove(&order_id);
             }
         };
 
