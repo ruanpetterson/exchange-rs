@@ -20,7 +20,7 @@ impl Trade {
         taker: &mut Order,
         maker: &mut Order,
     ) -> Result<Trade, TradeError> {
-        taker.matches(maker)?;
+        taker.matches(&maker)?;
 
         let exchanged = taker.remaining().min(maker.remaining());
         let price =

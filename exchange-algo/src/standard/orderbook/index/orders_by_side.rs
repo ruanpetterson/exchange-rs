@@ -40,6 +40,7 @@ where
         self.iter(side).next()
     }
 }
+
 impl<Order: Asset> Default for OrdersBySide<Order> {
     #[inline]
     fn default() -> Self {

@@ -10,7 +10,7 @@ impl<E: Exchange> Policy<E> for PostOnly {
             && exchange
                 .peek(&incoming_order.side().opposite())
                 .is_some_and(|top_order| {
-                    incoming_order.matches(top_order).is_ok()
+                    incoming_order.matches(&*top_order).is_ok()
                 })
         {
             // Post-only orders must go directly to orderbook and do not be
