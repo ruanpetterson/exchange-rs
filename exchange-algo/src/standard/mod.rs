@@ -1,8 +1,22 @@
-pub mod orderbook;
+pub(crate) mod orderbook;
+
+mod index;
 mod policy;
+
+use std::error::Error as StdError;
 
 use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite};
 
+type Error = Box<dyn StdError + Send + Sync + 'static>;
+
+const DB_CORRUPT_MSG: &str = "Could not deserialize item from database. \
+DB is possibly corrupt, could be due to an update or a lack of migrations. \
+Restore to a previous version, export your data and import your data again.";
+
+const DB_DEAD_MSG: &str = "Could not retrieve item from database. \
+DB is possibly unreachable, could be due IO issues.";
+
+#[doc(hidden)]
 pub struct MatchingAlgo;
 impl Algo for MatchingAlgo {
     type Error = DefaultExchangeError;
@@ -33,19 +47,6 @@ impl Algo for MatchingAlgo {
                 // anymore, we can also move on.
                 break;
             };
-
-            if top_order.is_closed() {
-                let top_order_id = top_order.id();
-
-                // We must explicity drop to reuse the `exchange`.
-                drop(top_order);
-
-                // As long as top order is completed, it can be safely removed
-                // from orderbook.
-                exchange
-                    .remove(&top_order_id)
-                    .expect("order should be `Some`");
-            }
         }
 
         policy::late_policies()

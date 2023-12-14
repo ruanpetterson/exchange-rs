@@ -14,7 +14,7 @@ use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
 pub struct Order {
     id: OrderId,
     side: OrderSide,
-    #[cfg_attr(feature = "serde", serde(flatten))]
+    #[cfg_attr(feature = "serde", serde(rename = "type"))]
     type_: OrderType,
     status: OrderStatus,
 }

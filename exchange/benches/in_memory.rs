@@ -7,7 +7,7 @@ use exchange_types::{OrderRequest, OrderSide};
 use rand::Rng;
 use uuid::Uuid;
 
-const PAIR: &'static str = "BENCH";
+const PAIR: &str = "BENCH";
 
 pub fn in_memory(c: &mut Criterion) {
     let mut rng = rand::thread_rng();

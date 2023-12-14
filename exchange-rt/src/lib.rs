@@ -1,7 +1,10 @@
+use std::path::Path;
+
 use compact_str::CompactString;
 use exchange_algo::Orderbook;
 use exchange_core::Exchange;
 use exchange_types::{Order, OrderId, OrderRequest, Trade};
+use tap::Pipe as _;
 use thiserror::Error;
 
 pub struct Engine {
@@ -16,6 +19,17 @@ impl Engine {
             pair: CompactString::new_inline(pair),
             orderbook: Orderbook::new(),
         }
+    }
+
+    #[inline]
+    pub fn path(self, path: impl AsRef<Path>) -> Result<Self, EngineError> {
+        Self {
+            orderbook: Orderbook::use_sled(path).map_err(|error| {
+                StorageError::InitializationError(error.to_string())
+            })?,
+            ..self
+        }
+        .pipe(Ok)
     }
 
     #[inline]
@@ -53,13 +67,21 @@ impl Engine {
 pub enum EngineError {
     #[error(transparent)]
     PairError(#[from] PairError),
+    #[error(transparent)]
+    StorageError(#[from] StorageError),
 }
 
 #[derive(Debug, Error)]
 pub enum PairError {
-    #[error("pair mismatch (expected={}, found={})", .expected, .found)]
+    #[error("pair mismatch (expected = `{}`, found = `{}`)", .expected, .found)]
     Mismatch {
         expected: CompactString,
         found: CompactString,
     },
+}
+
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error("failed to initialize the persistent storage ({})", .0)]
+    InitializationError(String),
 }

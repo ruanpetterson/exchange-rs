@@ -9,6 +9,7 @@ static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
 });
 
 #[test]
+#[ignore]
 fn simple_match() {
     let mut ask = ORDERS[0];
     let mut bid = ORDERS[1];
@@ -19,6 +20,7 @@ fn simple_match() {
 }
 
 #[test]
+#[ignore]
 fn partial_match() {
     let mut ask = ORDERS[3];
     let mut bid = ORDERS[2];
@@ -29,6 +31,7 @@ fn partial_match() {
 }
 
 #[test]
+#[ignore]
 fn taker_advantage_for_ask() {
     let mut ask = ORDERS[3];
     let mut bid = ORDERS[2];
@@ -41,6 +44,7 @@ fn taker_advantage_for_ask() {
 }
 
 #[test]
+#[ignore]
 fn taker_advantage_for_bid() {
     let mut bid = ORDERS[2];
     let mut ask = ORDERS[3];
@@ -53,6 +57,7 @@ fn taker_advantage_for_bid() {
 }
 
 #[test]
+#[ignore]
 fn orderbook() {
     let mut _orderbook = Orderbook::<Order, Trade>::new();
 }

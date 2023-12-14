@@ -18,6 +18,13 @@ impl OrderId {
     }
 }
 
+impl AsRef<[u8]> for OrderId {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 impl From<Uuid> for OrderId {
     #[inline]
     fn from(uuid: Uuid) -> Self {
