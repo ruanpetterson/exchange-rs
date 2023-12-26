@@ -45,7 +45,6 @@ impl<Order, Trade> Exchange for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
-    <Order as Asset>::OrderId: Hash,
 {
     type Algo = MatchingAlgo;
     type Order = Order;

@@ -39,7 +39,7 @@ impl FillOrKill {
             .take_while(|order| {
                 // Gather only the orders that are compatible to the
                 // `incoming_order`.
-                order.matches(incoming_order).is_ok()
+                incoming_order.matches(&**order).is_ok()
             })
             .map(|order| order.remaining())
             .try_fold(

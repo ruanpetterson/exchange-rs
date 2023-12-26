@@ -225,28 +225,32 @@ impl Asset for Order {
 
         // Matching cannot occur between closed orders.
         if taker.is_closed() || maker.is_closed() {
-            Err(StatusError::Closed)?
+            return Err(StatusError::Closed)?;
         }
 
-        match (taker.side(), maker.side()) {
-            (OrderSide::Ask, OrderSide::Bid)
-                if taker.limit_price().is_some()
-                    && taker.limit_price() > maker.limit_price() =>
-            {
-                Err(PriceError::Incompatible)?;
-            }
-            (OrderSide::Bid, OrderSide::Ask)
-                if taker.limit_price().is_some()
-                    && taker.limit_price() < maker.limit_price() =>
-            {
-                Err(PriceError::Incompatible)?;
-            }
-            (OrderSide::Ask, OrderSide::Bid)
-            | (OrderSide::Bid, OrderSide::Ask) => (),
-            _ => {
-                Err(SideError::Conflict)?;
-            }
+        if taker.side() == maker.side() {
+            return Err(SideError::Conflict)?;
         }
+
+        let maker_limit_price = maker
+            .limit_price()
+            .expect("market makers always have a limit price");
+
+        if let Some(taker_limit_price) = taker.limit_price() {
+            match (taker.side(), maker.side()) {
+                (OrderSide::Ask, OrderSide::Bid)
+                    if taker_limit_price > maker_limit_price =>
+                {
+                    return Err(PriceError::Incompatible)?;
+                }
+                (OrderSide::Bid, OrderSide::Ask)
+                    if taker_limit_price < maker_limit_price =>
+                {
+                    return Err(PriceError::Incompatible)?;
+                }
+                _ => (),
+            }
+        };
 
         Ok(())
     }
