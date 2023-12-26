@@ -22,6 +22,8 @@ jobs:
         toolchain: ${{ matrix.toolchain }}
     - name: cargo test
       uses: actions-rs/cargo@v1
+      env:
+        CI: true
       with:
         command: test
         args: --all-features

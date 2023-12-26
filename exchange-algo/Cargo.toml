@@ -3,6 +3,9 @@ name = "exchange-algo"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+test = []
+
 [dependencies]
 exchange-core = { path = "../exchange-core" }
 exchange-types = { path = "../exchange-types" }
