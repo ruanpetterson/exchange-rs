@@ -287,18 +287,19 @@ mod builder {
         type_variant: PhantomData<T>,
     }
 
-    pub enum Limit<T> {
-        Subtype(PhantomData<T>),
-    }
-
-    pub enum Gtc {}
-    pub enum Ioc {}
-
-    pub enum Market {}
+    pub struct Limit<T>(PhantomData<T>);
+    pub struct Market {}
 
     pub trait TypeVariant {}
-    impl<T> TypeVariant for Limit<T> {}
+    impl<T: LimitTypeVariant> TypeVariant for Limit<T> {}
     impl TypeVariant for Market {}
+
+    pub enum GoodTilCancel {}
+    pub enum ImmediateOrCancel {}
+
+    pub trait LimitTypeVariant {}
+    impl LimitTypeVariant for GoodTilCancel {}
+    impl LimitTypeVariant for ImmediateOrCancel {}
 
     impl Builder<(), ()> {
         #[inline]
@@ -313,23 +314,25 @@ mod builder {
 
     impl<S, T> Builder<S, T> {
         #[inline]
-        pub fn side(self, side: OrderSide) -> Builder<OrderSide, T> {
+        pub const fn side(&self, side: OrderSide) -> Builder<OrderSide, T> {
             Builder {
                 side,
                 type_: self.type_,
                 type_variant: self.type_variant,
             }
         }
+    }
 
+    impl<T> Builder<OrderSide, T> {
         #[inline]
-        pub fn limit(
-            self,
+        pub const fn limit(
+            &self,
             limit_price: u64,
             amount: u64,
-        ) -> Builder<S, Limit<Gtc>> {
+        ) -> Builder<OrderSide, Limit<GoodTilCancel>> {
             let type_ = OrderType::Limit {
                 limit_price,
-                time_in_force: TimeInForce::default(),
+                time_in_force: TimeInForce::GoodTilCancel { post_only: false },
                 amount,
                 filled: 0,
             };
@@ -342,7 +345,7 @@ mod builder {
         }
 
         #[inline]
-        pub fn market(self, amount: u64) -> Builder<S, Market> {
+        pub const fn market(&self, amount: u64) -> Builder<OrderSide, Market> {
             let type_ = OrderType::Market {
                 all_or_none: false,
                 amount,
@@ -357,9 +360,9 @@ mod builder {
         }
     }
 
-    impl<T> Builder<OrderSide, Limit<T>> {
+    impl<T: LimitTypeVariant> Builder<OrderSide, Limit<T>> {
         #[inline]
-        pub fn gtc(self) -> Builder<OrderSide, Limit<Gtc>> {
+        pub const fn gtc(&self) -> Builder<OrderSide, Limit<GoodTilCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -367,7 +370,8 @@ mod builder {
                 filled,
             } = self.type_()
             else {
-                // SAFETY: this is guaranteed by the type system.
+                // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
+                // always be `Limit`.
                 unsafe { unreachable_unchecked() }
             };
 
@@ -386,7 +390,9 @@ mod builder {
         }
 
         #[inline]
-        pub fn ioc(self) -> Builder<OrderSide, Limit<Ioc>> {
+        pub const fn ioc(
+            &self,
+        ) -> Builder<OrderSide, Limit<ImmediateOrCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -394,7 +400,8 @@ mod builder {
                 filled,
             } = self.type_()
             else {
-                // SAFETY: this is guaranteed by the type system.
+                // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
+                // always be `Limit`.
                 unsafe { unreachable_unchecked() }
             };
 
@@ -415,9 +422,11 @@ mod builder {
         }
     }
 
-    impl Builder<OrderSide, Limit<Gtc>> {
+    impl Builder<OrderSide, Limit<GoodTilCancel>> {
         #[inline]
-        pub fn post_only(self) -> Builder<OrderSide, Limit<Gtc>> {
+        pub const fn post_only(
+            &self,
+        ) -> Builder<OrderSide, Limit<GoodTilCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -425,7 +434,8 @@ mod builder {
                 filled,
             } = self.type_()
             else {
-                // SAFETY: this is guaranteed by the type system.
+                // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
+                // always be `Limit`.
                 unsafe { unreachable_unchecked() }
             };
 
@@ -444,9 +454,11 @@ mod builder {
         }
     }
 
-    impl Builder<OrderSide, Limit<Ioc>> {
+    impl Builder<OrderSide, Limit<ImmediateOrCancel>> {
         #[inline]
-        pub fn all_or_none(self) -> Builder<OrderSide, Limit<Ioc>> {
+        pub const fn all_or_none(
+            &self,
+        ) -> Builder<OrderSide, Limit<ImmediateOrCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -454,7 +466,8 @@ mod builder {
                 filled,
             } = self.type_()
             else {
-                // SAFETY: this is guaranteed by the type system.
+                // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
+                // always be `Limit`.
                 unsafe { unreachable_unchecked() }
             };
 
@@ -476,14 +489,16 @@ mod builder {
     }
 
     impl Builder<OrderSide, Market> {
-        pub fn all_or_none(self) -> Builder<OrderSide, Market> {
+        #[inline]
+        pub const fn all_or_none(&self) -> Builder<OrderSide, Market> {
             let OrderType::Market {
                 all_or_none: _,
                 amount,
                 filled,
             } = self.type_()
             else {
-                // SAFETY: this is guaranteed by the type system.
+                // SAFETY: since this is a `Builder<_, Market<_>>`, this will
+                // always be `Market`.
                 unsafe { unreachable_unchecked() }
             };
 
@@ -503,7 +518,7 @@ mod builder {
 
     impl<T: TypeVariant> Builder<OrderSide, T> {
         #[inline]
-        fn type_(&self) -> OrderType {
+        const fn type_(&self) -> OrderType {
             // SAFETY: whenever a `T` that implements `TypeVariant` is set, the
             // `Builder::type_` is initialized.
             unsafe { self.type_.assume_init() }
