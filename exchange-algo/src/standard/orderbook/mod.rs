@@ -45,7 +45,6 @@ impl<Order, Trade> Exchange for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
-    <Order as Asset>::OrderId: Hash,
 {
     type Algo = MatchingAlgo;
     type Order = Order;
@@ -206,5 +205,98 @@ where
             .unwrap_or_else(Zero::zero);
 
         (ask, bid)
+    }
+}
+
+#[cfg(any(test, feature = "test"))]
+#[doc(hidden)]
+pub(crate) mod __fmt {
+    use std::fmt;
+
+    use super::*;
+
+    #[cfg(any(test, feature = "test"))]
+    impl<Order, Trade> fmt::Debug for Orderbook<Order, Trade>
+    where
+        Order: Asset<Trade = Trade>,
+        Order: Asset<OrderSide = OrderSide>,
+        <Order as Asset>::OrderAmount: fmt::Debug,
+        <Order as Asset>::OrderPrice: fmt::Debug,
+        <Order as Asset>::OrderStatus: fmt::Debug,
+    {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            __fmt::OrderbookView::from(self).fmt(f)
+        }
+    }
+
+    #[repr(transparent)]
+    pub struct OrderbookView<'a, Order: Asset, Trade>(
+        &'a Orderbook<Order, Trade>,
+    );
+
+    impl<'a, Order: Asset, Trade> OrderbookView<'a, Order, Trade> {
+        #[inline]
+        pub const fn new(orderbook: &'a Orderbook<Order, Trade>) -> Self {
+            Self(orderbook)
+        }
+    }
+
+    impl<'a, Order: Asset, Trade> From<&'a Orderbook<Order, Trade>>
+        for OrderbookView<'a, Order, Trade>
+    {
+        #[inline]
+        fn from(orderbook: &'a Orderbook<Order, Trade>) -> Self {
+            Self::new(orderbook)
+        }
+    }
+
+    impl<'a, Order, Trade> fmt::Debug for OrderbookView<'a, Order, Trade>
+    where
+        Order: Asset<Trade = Trade>,
+        Order: Asset<OrderSide = OrderSide>,
+        <Order as Asset>::OrderAmount: fmt::Debug,
+        <Order as Asset>::OrderPrice: fmt::Debug,
+        <Order as Asset>::OrderSide: fmt::Debug,
+        <Order as Asset>::OrderStatus: fmt::Debug,
+    {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let filter = |ref side| {
+                self.0
+                    .iter(side)
+                    .map(OrderbookOrderView)
+                    .collect::<Vec<_>>()
+            };
+
+            f.debug_map()
+                .entry(&OrderSide::Ask, &filter(OrderSide::Ask))
+                .entry(&OrderSide::Bid, &filter(OrderSide::Bid))
+                .finish()
+        }
+    }
+
+    #[repr(transparent)]
+    struct OrderbookOrderView<'o, Order>(&'o Order);
+    impl<'o, Order: Asset> fmt::Debug for OrderbookOrderView<'o, Order>
+    where
+        <Order as Asset>::OrderAmount: fmt::Debug,
+        <Order as Asset>::OrderPrice: fmt::Debug,
+        <Order as Asset>::OrderStatus: fmt::Debug,
+    {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("Order")
+                .field(
+                    "limit_price",
+                    &self
+                        .0
+                        .limit_price()
+                        .expect("orderbook orders always have limit price"),
+                )
+                .field("remaining", &self.0.remaining())
+                .field("status", &self.0.status())
+                .finish()
+        }
     }
 }

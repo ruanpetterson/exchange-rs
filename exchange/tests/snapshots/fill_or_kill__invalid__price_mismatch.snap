@@ -1,0 +1,19 @@
+---
+source: exchange/tests/fill_or_kill.rs
+expression: "&exchange"
+---
+{
+    Ask: [],
+    Bid: [
+        Order {
+            limit_price: 100,
+            remaining: 50,
+            status: Open,
+        },
+        Order {
+            limit_price: 50,
+            remaining: 50,
+            status: Open,
+        },
+    ],
+}
