@@ -206,7 +206,7 @@ impl Asset for Order {
 
     #[inline]
     fn is_post_only(&self) -> bool {
-        matches!(self.type_, OrderType::Limit { time_in_force: TimeInForce::GoodTilCancel { post_only }, .. } if post_only)
+        matches!(self.type_, OrderType::Limit { time_in_force: TimeInForce::GoodTillCancel { post_only }, .. } if post_only)
     }
 
     #[inline]
@@ -294,11 +294,11 @@ mod builder {
     impl<T: LimitTypeVariant> TypeVariant for Limit<T> {}
     impl TypeVariant for Market {}
 
-    pub enum GoodTilCancel {}
+    pub enum GoodTillCancel {}
     pub enum ImmediateOrCancel {}
 
     pub trait LimitTypeVariant {}
-    impl LimitTypeVariant for GoodTilCancel {}
+    impl LimitTypeVariant for GoodTillCancel {}
     impl LimitTypeVariant for ImmediateOrCancel {}
 
     impl Builder<(), ()> {
@@ -329,10 +329,10 @@ mod builder {
             &self,
             limit_price: u64,
             amount: u64,
-        ) -> Builder<OrderSide, Limit<GoodTilCancel>> {
+        ) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let type_ = OrderType::Limit {
                 limit_price,
-                time_in_force: TimeInForce::GoodTilCancel { post_only: false },
+                time_in_force: TimeInForce::GoodTillCancel { post_only: false },
                 amount,
                 filled: 0,
             };
@@ -362,7 +362,7 @@ mod builder {
 
     impl<T: LimitTypeVariant> Builder<OrderSide, Limit<T>> {
         #[inline]
-        pub const fn gtc(&self) -> Builder<OrderSide, Limit<GoodTilCancel>> {
+        pub const fn gtc(&self) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -377,7 +377,7 @@ mod builder {
 
             let type_ = OrderType::Limit {
                 limit_price,
-                time_in_force: TimeInForce::GoodTilCancel { post_only: false },
+                time_in_force: TimeInForce::GoodTillCancel { post_only: false },
                 amount,
                 filled,
             };
@@ -422,11 +422,11 @@ mod builder {
         }
     }
 
-    impl Builder<OrderSide, Limit<GoodTilCancel>> {
+    impl Builder<OrderSide, Limit<GoodTillCancel>> {
         #[inline]
         pub const fn post_only(
             &self,
-        ) -> Builder<OrderSide, Limit<GoodTilCancel>> {
+        ) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
@@ -441,7 +441,7 @@ mod builder {
 
             let type_ = OrderType::Limit {
                 limit_price,
-                time_in_force: TimeInForce::GoodTilCancel { post_only: true },
+                time_in_force: TimeInForce::GoodTillCancel { post_only: true },
                 amount,
                 filled,
             };

@@ -48,7 +48,7 @@ pub enum OrderType {
 pub enum TimeInForce {
     /// An order will be on the book unless the order is canceled.
     #[cfg_attr(feature = "serde", serde(rename = "GTC"))]
-    GoodTilCancel {
+    GoodTillCancel {
         /// The post-only flag indicates that the order should only make
         /// liquidity. If any part of the order results in taking liquidity,
         /// the order will be rejected and no part of it will execute.
@@ -75,6 +75,6 @@ pub enum TimeInForce {
 
 impl Default for TimeInForce {
     fn default() -> Self {
-        Self::GoodTilCancel { post_only: false }
+        Self::GoodTillCancel { post_only: false }
     }
 }
