@@ -25,6 +25,8 @@ struct Args {
         help = "Orderbook events destination"
     )]
     output: Option<Output>,
+    #[clap(long, help = "Orderbook persistent storage")]
+    path: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -64,7 +66,11 @@ fn main() -> Result<()> {
         Ok(())
     });
 
-    let mut engine = Engine::new(&args.pair);
+    let mut engine = if let Some(path) = &args.path {
+        Engine::new(&args.pair).path(path)?
+    } else {
+        Engine::new(&args.pair)
+    };
 
     let mut i = 0.0f64;
     let begin = Instant::now();
