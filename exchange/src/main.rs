@@ -46,7 +46,7 @@ fn main() -> Result<()> {
             };
 
         let mut buf = String::with_capacity(4096);
-        while let Ok(_) = buf_read.read_line(&mut buf) {
+        while buf_read.read_line(&mut buf).is_ok() {
             let order = serde_json::from_str(&buf);
             buf.clear();
             match order {
