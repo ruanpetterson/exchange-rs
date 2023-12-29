@@ -47,11 +47,11 @@ impl Trade {
 #[derive(Debug, Error)]
 pub enum TradeError {
     #[error(transparent)]
-    PriceError(#[from] PriceError),
+    Price(#[from] PriceError),
     #[error(transparent)]
-    SideError(#[from] SideError),
+    Side(#[from] SideError),
     #[error(transparent)]
-    StatusError(#[from] StatusError),
+    Status(#[from] StatusError),
 }
 
 #[derive(Debug, Error)]

@@ -1,0 +1,51 @@
+name: cargo
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: nightly
+    - name: cargo check
+      run: cargo check --all-features --workspace
+  clippy:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        components: clippy
+        toolchain: nightly
+    - name: cargo fmt
+      run: cargo clippy --workspace -- -Dwarnings -Dclippy::perf
+  fmt:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        components: rustfmt
+        toolchain: nightly
+    - name: cargo fmt
+      run: cargo +nightly fmt --check --all
+  test:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: nightly
+    - name: cargo test
+      env:
+        CI: true
+      run: cargo test --all-features
