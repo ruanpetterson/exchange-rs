@@ -3,6 +3,7 @@ use std::cmp::{Ordering, Reverse};
 use std::ops::AddAssign;
 
 use exchange_core::Asset;
+use rust_decimal::Decimal;
 use thiserror::Error;
 
 use crate::order_type::TimeInForce;
@@ -41,8 +42,8 @@ impl Order {
     pub fn new_limit(
         id: OrderId,
         side: OrderSide,
-        limit_price: u64,
-        amount: u64,
+        limit_price: Decimal,
+        amount: Decimal,
     ) -> Self {
         Self {
             id,
@@ -51,7 +52,7 @@ impl Order {
                 limit_price,
                 time_in_force: Default::default(),
                 amount,
-                filled: 0,
+                filled: Decimal::ZERO,
             },
             status: OrderStatus::Open,
         }
@@ -63,7 +64,7 @@ impl Order {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
-    pub(crate) fn fill(&mut self, amount: u64) {
+    pub(crate) fn fill(&mut self, amount: Decimal) {
         self.try_fill(amount)
             .expect("order does not have available amount to fill")
     }
@@ -75,7 +76,7 @@ impl Order {
     /// This results in an unreliable state when current `Order::filled`
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
-    pub(crate) unsafe fn fill_unchecked(&mut self, amount: u64) {
+    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Decimal) {
         let filled = match self.type_ {
             OrderType::Limit { ref mut filled, .. }
             | OrderType::Market { ref mut filled, .. } => filled,
@@ -83,7 +84,7 @@ impl Order {
 
         filled.add_assign(amount);
 
-        self.status = if self.remaining() == 0 {
+        self.status = if self.remaining().is_zero() {
             OrderStatus::Completed
         } else {
             OrderStatus::Partial
@@ -93,8 +94,11 @@ impl Order {
     /// Fill an order within the specified amount, returning an error if
     /// something fails.
     #[inline]
-    pub(crate) fn try_fill(&mut self, amount: u64) -> Result<(), OrderError> {
-        if amount == 0 {
+    pub(crate) fn try_fill(
+        &mut self,
+        amount: Decimal,
+    ) -> Result<(), OrderError> {
+        if amount.is_zero() {
             return Err(OrderError::NoFill);
         }
 
@@ -132,9 +136,9 @@ impl PartialOrd for Order {
 }
 
 impl Asset for Order {
-    type OrderAmount = u64;
+    type OrderAmount = Decimal;
     type OrderId = OrderId;
-    type OrderPrice = u64;
+    type OrderPrice = Decimal;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = Trade;
@@ -327,14 +331,14 @@ mod builder {
         #[inline]
         pub const fn limit(
             &self,
-            limit_price: u64,
-            amount: u64,
+            limit_price: Decimal,
+            amount: Decimal,
         ) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let type_ = OrderType::Limit {
                 limit_price,
                 time_in_force: TimeInForce::GoodTillCancel { post_only: false },
                 amount,
-                filled: 0,
+                filled: Decimal::ZERO,
             };
 
             Builder {
@@ -345,11 +349,14 @@ mod builder {
         }
 
         #[inline]
-        pub const fn market(&self, amount: u64) -> Builder<OrderSide, Market> {
+        pub const fn market(
+            &self,
+            amount: Decimal,
+        ) -> Builder<OrderSide, Market> {
             let type_ = OrderType::Market {
                 all_or_none: false,
                 amount,
-                filled: 0,
+                filled: Decimal::ZERO,
             };
 
             Builder {
@@ -538,6 +545,8 @@ mod builder {
 
 #[cfg(test)]
 mod tests {
+    use rust_decimal_macros::dec;
+
     use super::*;
 
     mod valid_trades {
@@ -545,30 +554,42 @@ mod tests {
 
         #[test]
         fn same_prices() {
-            let mut ask =
-                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
-            let mut bid =
-                Order::builder().side(OrderSide::Bid).limit(10, 10).build();
+            let mut ask = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(10))
+                .build();
+            let mut bid = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(10), dec!(10))
+                .build();
 
             assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
         fn different_prices() {
-            let mut ask =
-                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
-            let mut bid =
-                Order::builder().side(OrderSide::Bid).limit(20, 10).build();
+            let mut ask = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(10))
+                .build();
+            let mut bid = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(20), dec!(10))
+                .build();
 
             assert!(ask.trade(&mut bid).is_ok());
         }
 
         #[test]
         fn partial_maker() {
-            let mut ask =
-                Order::builder().side(OrderSide::Ask).limit(10, 5).build();
-            let mut bid =
-                Order::builder().side(OrderSide::Bid).limit(20, 10).build();
+            let mut ask = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(5))
+                .build();
+            let mut bid = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(20), dec!(10))
+                .build();
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(ask.is_closed());
@@ -577,10 +598,14 @@ mod tests {
 
         #[test]
         fn partial_taker() {
-            let mut ask =
-                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
-            let mut bid =
-                Order::builder().side(OrderSide::Bid).limit(20, 5).build();
+            let mut ask = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(10))
+                .build();
+            let mut bid = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(20), dec!(5))
+                .build();
 
             assert!(ask.trade(&mut bid).is_ok());
             assert!(!ask.is_closed());
@@ -593,20 +618,28 @@ mod tests {
 
         #[test]
         fn same_side() {
-            let mut ask_1 =
-                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
-            let mut ask_2 =
-                Order::builder().side(OrderSide::Ask).limit(10, 10).build();
+            let mut ask_1 = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(10))
+                .build();
+            let mut ask_2 = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(10), dec!(10))
+                .build();
 
             assert!(ask_1.trade(&mut ask_2).is_err());
         }
 
         #[test]
         fn incompatible_prices() {
-            let mut ask =
-                Order::builder().side(OrderSide::Ask).limit(20, 10).build();
-            let mut bid =
-                Order::builder().side(OrderSide::Bid).limit(10, 10).build();
+            let mut ask = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(20), dec!(10))
+                .build();
+            let mut bid = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(10), dec!(10))
+                .build();
 
             assert!(ask.trade(&mut bid).is_err());
         }
@@ -614,18 +647,24 @@ mod tests {
 
     #[test]
     fn cancel_order() {
-        let mut ask =
-            Order::builder().side(OrderSide::Ask).limit(10, 10).build();
+        let mut ask = Order::builder()
+            .side(OrderSide::Ask)
+            .limit(dec!(10), dec!(10))
+            .build();
         ask.cancel();
         assert_eq!(ask.status(), OrderStatus::Cancelled);
     }
 
     #[test]
     fn close_order() {
-        let mut ask =
-            Order::builder().side(OrderSide::Ask).limit(10, 10).build();
-        let mut bid =
-            Order::builder().side(OrderSide::Bid).limit(10, 5).build();
+        let mut ask = Order::builder()
+            .side(OrderSide::Ask)
+            .limit(dec!(10), dec!(10))
+            .build();
+        let mut bid = Order::builder()
+            .side(OrderSide::Bid)
+            .limit(dec!(10), dec!(5))
+            .build();
 
         assert!(ask.trade(&mut bid).is_ok());
 

@@ -1,5 +1,5 @@
 use compact_str::CompactString;
-use rust_decimal::{prelude::ToPrimitive, Decimal};
+use rust_decimal::Decimal;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -43,12 +43,10 @@ impl TryFrom<OrderRequest> for Order {
                 OrderId::new(order_id),
                 side,
                 OrderType::Limit {
-                    limit_price: limit_price.trunc().to_u64().unwrap() * 100
-                        + limit_price.fract().to_u64().unwrap(),
+                    limit_price,
                     time_in_force: TimeInForce::default(),
-                    amount: amount.trunc().to_u64().unwrap() * 100
-                        + amount.fract().to_u64().unwrap(),
-                    filled: 0,
+                    amount,
+                    filled: Decimal::ZERO,
                 },
             )),
             OrderRequest::Delete { .. } => Err(OrderRequestError::MismatchType),

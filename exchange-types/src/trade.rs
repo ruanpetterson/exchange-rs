@@ -1,4 +1,5 @@
 use exchange_core::Asset;
+use rust_decimal::Decimal;
 use thiserror::Error;
 
 use super::{Order, OrderId};
@@ -9,8 +10,8 @@ use super::{Order, OrderId};
 pub struct Trade {
     pub(crate) taker: OrderId,
     pub(crate) maker: OrderId,
-    pub(crate) amount: u64,
-    pub(crate) price: u64,
+    pub(crate) amount: Decimal,
+    pub(crate) price: Decimal,
 }
 
 impl Trade {
@@ -39,7 +40,7 @@ impl Trade {
 
     /// Returns the traded price.
     #[inline]
-    pub fn price(&self) -> u64 {
+    pub fn price(&self) -> Decimal {
         self.price
     }
 }

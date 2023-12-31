@@ -6,6 +6,7 @@
 use exchange_algo::Orderbook;
 use exchange_core::Exchange;
 use exchange_types::{Order, OrderSide};
+use rust_decimal_macros::dec;
 use tap::Tap;
 
 mod valid {
@@ -19,7 +20,7 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -27,7 +28,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .market(100)
+                .market(dec!(100))
                 .all_or_none()
                 .build();
 
@@ -41,14 +42,14 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(200, 100)
+                    .limit(dec!(200), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -56,7 +57,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .market(200)
+                .market(dec!(200))
                 .all_or_none()
                 .build();
 
@@ -70,21 +71,21 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(200, 100)
+                    .limit(dec!(200), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(300, 100)
+                    .limit(dec!(300), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -92,7 +93,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
-                .market(300)
+                .market(dec!(300))
                 .all_or_none()
                 .build();
 
@@ -110,7 +111,7 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(90, 100)
+                    .limit(dec!(90), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -118,7 +119,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .limit(100, 100)
+                .limit(dec!(100), dec!(100))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -133,14 +134,14 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(80, 100)
+                    .limit(dec!(80), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(90, 100)
+                    .limit(dec!(90), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -148,7 +149,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .limit(100, 200)
+                .limit(dec!(100), dec!(200))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -163,21 +164,21 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(110, 100)
+                    .limit(dec!(110), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(120, 100)
+                    .limit(dec!(120), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -185,7 +186,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
-                .limit(90, 300)
+                .limit(dec!(90), dec!(300))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -204,7 +205,7 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -212,7 +213,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .limit(100, 100)
+                .limit(dec!(100), dec!(100))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -227,14 +228,14 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Ask)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -242,7 +243,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
-                .limit(100, 200)
+                .limit(dec!(100), dec!(200))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -257,21 +258,21 @@ mod valid {
             let mut exchange = Orderbook::new().tap_mut(|exchange| {
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
 
                 let limit_order = Order::builder()
                     .side(OrderSide::Bid)
-                    .limit(100, 100)
+                    .limit(dec!(100), dec!(100))
                     .build();
 
                 assert!(exchange.matching(limit_order).is_ok());
@@ -279,7 +280,7 @@ mod valid {
 
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
-                .limit(100, 300)
+                .limit(dec!(100), dec!(300))
                 .ioc()
                 .all_or_none()
                 .build();
@@ -297,15 +298,17 @@ mod invalid {
     #[test]
     fn amount_mismatch() {
         let mut exchange = Orderbook::new().tap_mut(|exchange| {
-            let limit_order =
-                Order::builder().side(OrderSide::Ask).limit(100, 50).build();
+            let limit_order = Order::builder()
+                .side(OrderSide::Ask)
+                .limit(dec!(100), dec!(50))
+                .build();
 
             assert!(exchange.matching(limit_order).is_ok());
         });
 
         let fill_or_kill = Order::builder()
             .side(OrderSide::Bid)
-            .limit(100, 100)
+            .limit(dec!(100), dec!(100))
             .ioc()
             .all_or_none()
             .build();
@@ -318,20 +321,24 @@ mod invalid {
     #[test]
     fn price_mismatch() {
         let mut exchange = Orderbook::new().tap_mut(|exchange| {
-            let limit_order =
-                Order::builder().side(OrderSide::Bid).limit(50, 50).build();
+            let limit_order = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(50), dec!(50))
+                .build();
 
             assert!(exchange.matching(limit_order).is_ok());
 
-            let limit_order =
-                Order::builder().side(OrderSide::Bid).limit(100, 50).build();
+            let limit_order = Order::builder()
+                .side(OrderSide::Bid)
+                .limit(dec!(100), dec!(50))
+                .build();
 
             assert!(exchange.matching(limit_order).is_ok());
         });
 
         let fill_or_kill = Order::builder()
             .side(OrderSide::Ask)
-            .limit(100, 100)
+            .limit(dec!(100), dec!(100))
             .ioc()
             .all_or_none()
             .build();

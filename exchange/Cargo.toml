@@ -33,6 +33,7 @@ exchange-algo = { path = "../exchange-algo", features = ["test"] }
 criterion = "0.5.1"
 insta = "1.34.0"
 once_cell = "~1.18"
+rust_decimal_macros = "1.33.1"
 tap = "1.0.1"
 
 [[bin]]
