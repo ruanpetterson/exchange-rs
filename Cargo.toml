@@ -11,3 +11,7 @@ members = [
 
 [profile.release]
 strip = true
+
+[profile.bench]
+debug = true
+strip = false

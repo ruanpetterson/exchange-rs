@@ -18,6 +18,7 @@ anyhow = "~1.0"
 clap = { version = "3.2.23", features = ["clap_derive", "derive"] }
 compact_str = { version = "0.7.1", features = ["serde"] }
 crossbeam = { version = "0.8.2", features = ["crossbeam-channel"] }
+mimalloc = { version = "0.1.39", default-features = false }
 owo-colors = "3.5.0"
 rand = "0.8.5"
 rayon = "1.8.0"

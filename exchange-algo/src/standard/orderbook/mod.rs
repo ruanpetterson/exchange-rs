@@ -1,7 +1,6 @@
 mod index;
 
 use std::collections::btree_map::Entry;
-use std::hash::Hash;
 use std::marker::PhantomData;
 
 use exchange_core::{Asset, Exchange, ExchangeExt};
@@ -163,7 +162,6 @@ impl<Order, Trade> ExchangeExt for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
-    <Order as Asset>::OrderId: Hash,
 {
     #[inline]
     fn spread(
