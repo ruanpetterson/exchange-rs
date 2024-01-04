@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, Reverse};
 use std::ops::AddAssign;
 
-use exchange_core::Asset;
+use exchange_core::{Asset, Exchange};
 use rust_decimal::Decimal;
 use thiserror::Error;
 
@@ -214,6 +214,17 @@ impl Asset for Order {
     }
 
     #[inline]
+    fn cancel(&mut self) {
+        match self.status() {
+            OrderStatus::Open => self.status = OrderStatus::Cancelled,
+            OrderStatus::Partial => self.status = OrderStatus::Closed,
+            _ => (),
+        }
+    }
+}
+
+impl Exchange for Order {
+    #[inline]
     fn trade(
         &mut self,
         other: &mut Self,
@@ -257,15 +268,6 @@ impl Asset for Order {
         };
 
         Ok(())
-    }
-
-    #[inline]
-    fn cancel(&mut self) {
-        match self.status() {
-            OrderStatus::Open => self.status = OrderStatus::Cancelled,
-            OrderStatus::Partial => self.status = OrderStatus::Closed,
-            _ => (),
-        }
     }
 }
 

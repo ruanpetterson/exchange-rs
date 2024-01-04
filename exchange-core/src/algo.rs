@@ -1,4 +1,4 @@
-use crate::{Exchange, ExchangeExt};
+use crate::{EngineExt, Tree};
 
 /// Core exchange algorithm.
 pub trait Algo {
@@ -12,8 +12,8 @@ pub trait Algo {
     /// order based on the orderbook's rules, such as price-time priority.
     fn matching<E>(
         exchange: &mut E,
-        incoming_order: <E as Exchange>::Order,
+        incoming_order: <E as Tree>::Order,
     ) -> Result<Self::Output, Self::Error>
     where
-        E: Exchange + ExchangeExt;
+        E: Tree + EngineExt;
 }

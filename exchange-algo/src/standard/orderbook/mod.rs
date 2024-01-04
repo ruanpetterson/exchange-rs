@@ -4,7 +4,7 @@ use std::collections::btree_map::Entry;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use exchange_core::{Asset, Exchange, ExchangeExt};
+use exchange_core::{Asset, Engine, EngineExt, Exchange, Tree};
 use exchange_types::OrderSide;
 use num::Zero;
 
@@ -41,12 +41,21 @@ where
     }
 }
 
-impl<Order, Trade> Exchange for Orderbook<Order, Trade>
+impl<Order, Trade> Engine for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
+    Order: Exchange,
 {
     type Algo = MatchingAlgo;
+}
+
+impl<Order, Trade> Tree for Orderbook<Order, Trade>
+where
+    Order: Asset<OrderSide = OrderSide>,
+    Order: Asset<Trade = Trade>,
+    Order: Exchange,
+{
     type Order = Order;
     type OrderRef<'e> = &'e Order where Self: 'e;
     type OrderRefMut<'e> = &'e mut Order where Self: 'e;
@@ -159,10 +168,11 @@ where
     }
 }
 
-impl<Order, Trade> ExchangeExt for Orderbook<Order, Trade>
+impl<Order, Trade> EngineExt for Orderbook<Order, Trade>
 where
     Order: Asset<OrderSide = OrderSide>,
     Order: Asset<Trade = Trade>,
+    Order: Exchange,
     <Order as Asset>::OrderId: Hash,
 {
     #[inline]
@@ -220,6 +230,7 @@ pub(crate) mod __fmt {
     where
         Order: Asset<Trade = Trade>,
         Order: Asset<OrderSide = OrderSide>,
+        Order: Exchange,
         <Order as Asset>::OrderAmount: fmt::Debug,
         <Order as Asset>::OrderPrice: fmt::Debug,
         <Order as Asset>::OrderStatus: fmt::Debug,
@@ -255,6 +266,7 @@ pub(crate) mod __fmt {
     where
         Order: Asset<Trade = Trade>,
         Order: Asset<OrderSide = OrderSide>,
+        Order: Exchange,
         <Order as Asset>::OrderAmount: fmt::Debug,
         <Order as Asset>::OrderPrice: fmt::Debug,
         <Order as Asset>::OrderSide: fmt::Debug,

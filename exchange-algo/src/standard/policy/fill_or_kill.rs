@@ -1,12 +1,12 @@
 use std::ops::ControlFlow;
 
-use exchange_core::{Asset, Exchange, Opposite};
+use exchange_core::{Asset, Exchange, Opposite, Tree};
 use num::Zero;
 
 use super::Policy;
 
 pub(super) struct FillOrKill;
-impl<E: Exchange> Policy<E> for FillOrKill {
+impl<E: Tree> Policy<E> for FillOrKill {
     #[inline]
     fn enforce(incoming_order: &mut E::Order, exchange: &E) {
         if incoming_order.is_fill_or_kill()
@@ -33,7 +33,7 @@ impl FillOrKill {
     /// given that no matter what else happens, the result will also be
     /// `true`.
     #[inline]
-    fn can_fill<E: Exchange>(incoming_order: &E::Order, exchange: &E) -> bool {
+    fn can_fill<E: Tree>(incoming_order: &E::Order, exchange: &E) -> bool {
         exchange
             .iter(&incoming_order.side().opposite())
             .take_while(|order| {

@@ -1,9 +1,9 @@
-use exchange_core::{Asset, Exchange, Opposite};
+use exchange_core::{Asset, Exchange, Opposite, Tree};
 
 use super::Policy;
 
 pub(super) struct PostOnly;
-impl<E: Exchange> Policy<E> for PostOnly {
+impl<E: Tree> Policy<E> for PostOnly {
     #[inline]
     fn enforce(incoming_order: &mut E::Order, exchange: &E) {
         if incoming_order.is_post_only()

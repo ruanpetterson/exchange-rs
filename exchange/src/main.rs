@@ -7,7 +7,7 @@ use std::time::Instant;
 use anyhow::Result;
 use clap::Parser;
 use compact_str::CompactString;
-use exchange_core::ExchangeExt;
+use exchange_core::EngineExt;
 use exchange_rt::Engine;
 use owo_colors::OwoColorize;
 

@@ -1,4 +1,4 @@
-use exchange_core::Asset;
+use exchange_core::{Asset, Exchange as _};
 use rust_decimal::Decimal;
 use thiserror::Error;
 
