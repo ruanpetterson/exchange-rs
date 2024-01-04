@@ -1,9 +1,9 @@
-use exchange_core::{Asset, Exchange};
+use exchange_core::{Asset, Tree};
 
 use super::Policy;
 
 pub(super) struct ImmediateOrCancel;
-impl<E: Exchange> Policy<E> for ImmediateOrCancel {
+impl<E: Tree> Policy<E> for ImmediateOrCancel {
     #[inline]
     fn enforce(incoming_order: &mut E::Order, _: &E) {
         if incoming_order.is_immediate_or_cancel() {

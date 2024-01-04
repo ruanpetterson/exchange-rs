@@ -4,7 +4,7 @@
 //! words, FOK orders are a combination of AON and IOC orders.
 
 use exchange_algo::Orderbook;
-use exchange_core::Exchange;
+use exchange_core::Engine;
 use exchange_types::{Order, OrderSide};
 use rust_decimal_macros::dec;
 use tap::Tap;

@@ -1,6 +1,6 @@
 use compact_str::CompactString;
 use exchange_algo::Orderbook;
-use exchange_core::Exchange;
+use exchange_core::{Engine as _, Tree as _};
 use exchange_types::{Order, OrderId, OrderRequest, Trade};
 use thiserror::Error;
 

@@ -1,7 +1,7 @@
 pub mod orderbook;
 mod policy;
 
-use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite};
+use exchange_core::{Algo, Asset, EngineExt, Exchange, Opposite, Tree};
 
 pub struct MatchingAlgo;
 impl Algo for MatchingAlgo {
@@ -11,10 +11,10 @@ impl Algo for MatchingAlgo {
     #[inline]
     fn matching<E>(
         exchange: &mut E,
-        mut incoming_order: <E as Exchange>::Order,
+        mut incoming_order: <E as Tree>::Order,
     ) -> Result<(), DefaultExchangeError>
     where
-        E: Exchange + ExchangeExt,
+        E: Tree + EngineExt,
     {
         policy::before_policies()
             .iter()

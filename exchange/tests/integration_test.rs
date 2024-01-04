@@ -1,5 +1,5 @@
 use exchange_algo::Orderbook;
-use exchange_core::Asset;
+use exchange_core::{Asset, Exchange};
 use exchange_types::{Order, Trade};
 use once_cell::sync::Lazy;
 
