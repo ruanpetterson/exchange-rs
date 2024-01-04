@@ -11,6 +11,9 @@ use exchange_core::ExchangeExt;
 use exchange_rt::Engine;
 use owo_colors::OwoColorize;
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 #[derive(Parser)]
 #[clap(author, version, about)]
 struct Args {
@@ -30,7 +33,7 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let (tx, rx) = mpsc::sync_channel(65_536);
+    let (tx, rx) = mpsc::sync_channel(128 * 1024);
 
     std::thread::spawn(move || -> Result<()> {
         let mut buf_read: Box<dyn BufRead> =
@@ -45,11 +48,11 @@ fn main() -> Result<()> {
                 }
             };
 
-        let mut buf = String::with_capacity(4096);
+        let mut buf = String::with_capacity(1024);
         while buf_read.read_line(&mut buf).is_ok() {
             let order = serde_json::from_str(&buf);
-            buf.clear();
             match order {
+                Ok(order) => tx.send(order)?,
                 Err(error) => {
                     if error.is_eof() {
                         break;
@@ -57,8 +60,8 @@ fn main() -> Result<()> {
 
                     eprintln!("{error}");
                 }
-                Ok(order) => tx.send(order)?,
             }
+            buf.clear();
         }
 
         Ok(())
