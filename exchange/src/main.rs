@@ -1,5 +1,6 @@
+use std::fs;
+use std::io;
 use std::io::BufRead;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::time::Instant;
@@ -36,28 +37,14 @@ fn main() -> Result<()> {
     let (tx, rx) = mpsc::sync_channel(128 * 1024);
 
     std::thread::spawn(move || -> Result<()> {
-        let mut buf_read: Box<dyn BufRead> =
-            match &args.input.unwrap_or_default() {
-                Input::File(path) => {
-                    let file = std::fs::File::open(path)?;
-                    Box::new(BufReader::new(file))
-                }
-                Input::Stdin => {
-                    let stdin = std::io::stdin();
-                    Box::new(BufReader::new(stdin))
-                }
-            };
-
+        let mut reader = io::BufReader::new(args.input.unwrap_or_default());
         let mut buf = String::with_capacity(1024);
-        while buf_read.read_line(&mut buf).is_ok() {
+        while reader.read_line(&mut buf).is_ok() {
             let order = serde_json::from_str(&buf);
             match order {
                 Ok(order) => tx.send(order)?,
+                Err(error) if error.is_eof() => break,
                 Err(error) => {
-                    if error.is_eof() {
-                        break;
-                    }
-
                     eprintln!("{error}");
                 }
             }
@@ -122,8 +109,19 @@ enum Input {
 }
 
 impl From<&str> for Input {
+    #[inline]
     fn from(s: &str) -> Self {
         Input::File(s.to_owned().into())
+    }
+}
+
+impl io::Read for Input {
+    #[inline]
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self {
+            Input::Stdin => io::stdin().lock().read(buf),
+            Input::File(path) => fs::File::open(path)?.read(buf),
+        }
     }
 }
 
@@ -135,6 +133,7 @@ enum Output {
 }
 
 impl From<&str> for Output {
+    #[inline]
     fn from(s: &str) -> Self {
         Output::File(s.to_owned().into())
     }
