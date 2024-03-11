@@ -1,5 +1,7 @@
+pub mod error;
+
 mod order;
-pub use order::Order;
+pub use order::{LimitOrder, Order};
 
 mod order_id;
 pub use order_id::OrderId;

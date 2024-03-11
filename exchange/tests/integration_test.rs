@@ -1,6 +1,6 @@
 use exchange_algo::Orderbook;
-use exchange_core::Asset;
-use exchange_types::{Order, Trade};
+use exchange_core::{Asset, Trade as _};
+use exchange_types::{LimitOrder, Order};
 use once_cell::sync::Lazy;
 
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
@@ -10,7 +10,7 @@ static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {
 
 #[test]
 fn simple_match() {
-    let mut ask = ORDERS[0];
+    let mut ask: LimitOrder = ORDERS[0].try_into().unwrap();
     let mut bid = ORDERS[1];
 
     assert!(ask.trade(&mut bid).is_ok());
@@ -20,7 +20,7 @@ fn simple_match() {
 
 #[test]
 fn partial_match() {
-    let mut ask = ORDERS[3];
+    let mut ask: LimitOrder = ORDERS[3].try_into().unwrap();
     let mut bid = ORDERS[2];
 
     assert!(ask.trade(&mut bid).is_ok());
@@ -30,29 +30,23 @@ fn partial_match() {
 
 #[test]
 fn taker_advantage_for_ask() {
-    let mut ask = ORDERS[3];
+    let mut ask: LimitOrder = ORDERS[3].try_into().unwrap();
     let mut bid = ORDERS[2];
 
     let trade = ask.trade(&mut bid).expect("a sucessful trade");
-    assert_eq!(
-        trade.price(),
-        ask.limit_price().unwrap().max(bid.limit_price().unwrap())
-    );
+    assert_eq!(trade.price(), ask.limit_price().unwrap());
 }
 
 #[test]
 fn taker_advantage_for_bid() {
-    let mut bid = ORDERS[2];
+    let mut bid: LimitOrder = ORDERS[2].try_into().unwrap();
     let mut ask = ORDERS[3];
 
     let trade = bid.trade(&mut ask).expect("a sucessful trade");
-    assert_eq!(
-        trade.price(),
-        ask.limit_price().unwrap().min(bid.limit_price().unwrap())
-    );
+    assert_eq!(trade.price(), bid.limit_price().unwrap());
 }
 
 #[test]
 fn orderbook() {
-    let mut _orderbook = Orderbook::<Order, Trade>::new();
+    let mut _orderbook = Orderbook::new();
 }

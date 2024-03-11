@@ -4,32 +4,26 @@ use std::collections::btree_map::Entry;
 use std::marker::PhantomData;
 
 use exchange_core::{Asset, Exchange, ExchangeExt};
-use exchange_types::OrderSide;
+use exchange_types::{LimitOrder, Order, OrderSide, Trade};
 use num::Zero;
 
 use crate::standard::orderbook::index::{OrdersById, OrdersBySide};
 use crate::standard::MatchingAlgo;
 
-pub struct Orderbook<Order: Asset, Trade> {
-    orders_by_id: OrdersById<Order>,
-    orders_by_side: OrdersBySide<Order>,
+pub struct Orderbook {
+    orders_by_id: OrdersById<LimitOrder>,
+    orders_by_side: OrdersBySide<LimitOrder>,
     _trade: PhantomData<Trade>,
 }
 
-impl<Order, Trade> Orderbook<Order, Trade>
-where
-    Order: Asset,
-{
+impl Orderbook {
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl<Order, Trade> Default for Orderbook<Order, Trade>
-where
-    Order: Asset,
-{
+impl Default for Orderbook {
     #[inline]
     fn default() -> Self {
         Self {
@@ -40,15 +34,12 @@ where
     }
 }
 
-impl<Order, Trade> Exchange for Orderbook<Order, Trade>
-where
-    Order: Asset<OrderSide = OrderSide>,
-    Order: Asset<Trade = Trade>,
-{
+impl Exchange for Orderbook {
     type Algo = MatchingAlgo;
-    type Order = Order;
-    type OrderRef<'e> = &'e Order where Self: 'e;
-    type OrderRefMut<'e> = &'e mut Order where Self: 'e;
+    type Order = LimitOrder;
+    type IncomingOrder = Order;
+    type OrderRef<'e> = &'e LimitOrder where Self: 'e;
+    type OrderRefMut<'e> = &'e mut LimitOrder where Self: 'e;
 
     #[inline]
     fn iter(
@@ -56,7 +47,7 @@ where
         side: &<Self::Order as Asset>::OrderSide,
     ) -> impl Iterator<Item = Self::OrderRef<'_>> + '_ {
         let order_id_to_order =
-            |order_id: &<Order as Asset>::OrderId| -> &Order {
+            |order_id: &<LimitOrder as Asset>::OrderId| -> Self::OrderRef<'_> {
                 self.orders_by_id
                     .get(order_id)
                     .expect("every order in tree must also be in index")
@@ -158,11 +149,7 @@ where
     }
 }
 
-impl<Order, Trade> ExchangeExt for Orderbook<Order, Trade>
-where
-    Order: Asset<OrderSide = OrderSide>,
-    Order: Asset<Trade = Trade>,
-{
+impl ExchangeExt for Orderbook {
     #[inline]
     fn spread(
         &self,
@@ -192,13 +179,13 @@ where
     ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
         let ask = self
             .iter(&OrderSide::Ask)
-            .map(Order::remaining)
+            .map(Asset::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);
 
         let bid = self
             .iter(&OrderSide::Bid)
-            .map(Order::remaining)
+            .map(Asset::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);
 
@@ -214,14 +201,7 @@ pub(crate) mod __fmt {
     use super::*;
 
     #[cfg(any(test, feature = "test"))]
-    impl<Order, Trade> fmt::Debug for Orderbook<Order, Trade>
-    where
-        Order: Asset<Trade = Trade>,
-        Order: Asset<OrderSide = OrderSide>,
-        <Order as Asset>::OrderAmount: fmt::Debug,
-        <Order as Asset>::OrderPrice: fmt::Debug,
-        <Order as Asset>::OrderStatus: fmt::Debug,
-    {
+    impl fmt::Debug for Orderbook {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             __fmt::OrderbookView::from(self).fmt(f)
@@ -229,35 +209,23 @@ pub(crate) mod __fmt {
     }
 
     #[repr(transparent)]
-    pub struct OrderbookView<'a, Order: Asset, Trade>(
-        &'a Orderbook<Order, Trade>,
-    );
+    pub struct OrderbookView<'a>(&'a Orderbook);
 
-    impl<'a, Order: Asset, Trade> OrderbookView<'a, Order, Trade> {
+    impl<'a> OrderbookView<'a> {
         #[inline]
-        pub const fn new(orderbook: &'a Orderbook<Order, Trade>) -> Self {
+        pub const fn new(orderbook: &'a Orderbook) -> Self {
             Self(orderbook)
         }
     }
 
-    impl<'a, Order: Asset, Trade> From<&'a Orderbook<Order, Trade>>
-        for OrderbookView<'a, Order, Trade>
-    {
+    impl<'a> From<&'a Orderbook> for OrderbookView<'a> {
         #[inline]
-        fn from(orderbook: &'a Orderbook<Order, Trade>) -> Self {
+        fn from(orderbook: &'a Orderbook) -> Self {
             Self::new(orderbook)
         }
     }
 
-    impl<'a, Order, Trade> fmt::Debug for OrderbookView<'a, Order, Trade>
-    where
-        Order: Asset<Trade = Trade>,
-        Order: Asset<OrderSide = OrderSide>,
-        <Order as Asset>::OrderAmount: fmt::Debug,
-        <Order as Asset>::OrderPrice: fmt::Debug,
-        <Order as Asset>::OrderSide: fmt::Debug,
-        <Order as Asset>::OrderStatus: fmt::Debug,
-    {
+    impl<'a> fmt::Debug for OrderbookView<'a> {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let filter = |ref side| {
@@ -275,13 +243,8 @@ pub(crate) mod __fmt {
     }
 
     #[repr(transparent)]
-    struct OrderbookOrderView<'o, Order>(&'o Order);
-    impl<'o, Order: Asset> fmt::Debug for OrderbookOrderView<'o, Order>
-    where
-        <Order as Asset>::OrderAmount: fmt::Debug,
-        <Order as Asset>::OrderPrice: fmt::Debug,
-        <Order as Asset>::OrderStatus: fmt::Debug,
-    {
+    struct OrderbookOrderView<'o>(&'o LimitOrder);
+    impl<'o> fmt::Debug for OrderbookOrderView<'o> {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_struct("Order")
