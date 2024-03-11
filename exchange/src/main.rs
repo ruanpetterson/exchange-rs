@@ -95,7 +95,7 @@ fn main() -> Result<()> {
         Output::Stdout => {
             // TODO: impl serde feature
         }
-        Output::File(..) => unimplemented!(),
+        Output::File(_path) => unimplemented!(),
     };
 
     Ok(())

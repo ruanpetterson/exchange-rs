@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use exchange_core::{Asset, Exchange, Opposite};
+use exchange_core::{Asset, Exchange, Opposite, Trade};
 use num::Zero;
 
 use super::Policy;
@@ -8,7 +8,7 @@ use super::Policy;
 pub(super) struct FillOrKill;
 impl<E: Exchange> Policy<E> for FillOrKill {
     #[inline]
-    fn enforce(incoming_order: &mut E::Order, exchange: &E) {
+    fn enforce(incoming_order: &mut E::IncomingOrder, exchange: &E) {
         if incoming_order.is_fill_or_kill()
             && !FillOrKill::can_fill(incoming_order, exchange)
         {
@@ -33,13 +33,16 @@ impl FillOrKill {
     /// given that no matter what else happens, the result will also be
     /// `true`.
     #[inline]
-    fn can_fill<E: Exchange>(incoming_order: &E::Order, exchange: &E) -> bool {
+    fn can_fill<E: Exchange>(
+        incoming_order: &E::IncomingOrder,
+        exchange: &E,
+    ) -> bool {
         exchange
             .iter(&incoming_order.side().opposite())
             .take_while(|order| {
                 // Gather only the orders that are compatible to the
                 // `incoming_order`.
-                incoming_order.matches(&**order).is_ok()
+                order.matches(incoming_order).is_ok()
             })
             .map(|order| order.remaining())
             .try_fold(

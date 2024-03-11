@@ -3,7 +3,7 @@ use std::ops::{Add, Sub};
 
 use num::Zero;
 
-pub trait Asset<Order = Self>: PartialOrd {
+pub trait Asset: PartialOrd {
     /// Order amount.
     type OrderAmount: Add<Output = Self::OrderAmount>
         + Sub<Output = Self::OrderAmount>
@@ -40,15 +40,21 @@ pub trait Asset<Order = Self>: PartialOrd {
     fn is_immediate_or_cancel(&self) -> bool;
     /// Returns `true` if order is post-only.
     fn is_post_only(&self) -> bool;
-    /// Returns `Ok` if orders match.
-    fn matches(&self, other: &Order) -> Result<(), Self::TradeError>;
+    /// Cancel the order.
+    fn cancel(&mut self);
+}
+
+pub trait Trade<Rhs>: Asset
+where
+    Rhs: Asset,
+{
     /// Execute a trade.
     fn trade(
         &mut self,
-        other: &mut Order,
+        other: &mut Rhs,
     ) -> Result<Self::Trade, Self::TradeError>;
-    /// Cancel the order.
-    fn cancel(&mut self);
+    /// Returns `Ok` if orders match.
+    fn matches(&self, other: &Rhs) -> Result<(), Self::TradeError>;
 }
 
 /// The logical opposite of a value.

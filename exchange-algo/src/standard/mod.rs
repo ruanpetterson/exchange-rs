@@ -1,7 +1,7 @@
 pub mod orderbook;
 mod policy;
 
-use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite};
+use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite, Trade};
 
 pub struct MatchingAlgo;
 impl Algo for MatchingAlgo {
@@ -11,10 +11,11 @@ impl Algo for MatchingAlgo {
     #[inline]
     fn matching<E>(
         exchange: &mut E,
-        mut incoming_order: <E as Exchange>::Order,
+        mut incoming_order: <E as Exchange>::IncomingOrder,
     ) -> Result<(), DefaultExchangeError>
     where
         E: Exchange + ExchangeExt,
+        <E as Exchange>::Order: TryFrom<<E as Exchange>::IncomingOrder>,
     {
         policy::before_policies()
             .iter()
@@ -28,7 +29,7 @@ impl Algo for MatchingAlgo {
                 break;
             };
 
-            let Ok(_trade) = incoming_order.trade(&mut *top_order) else {
+            let Ok(_trade) = top_order.trade(&mut incoming_order) else {
                 // Since incoming order is not matching to top order
                 // anymore, we can also move on.
                 break;
@@ -54,14 +55,14 @@ impl Algo for MatchingAlgo {
 
         // If incoming order is not full-filled and open, it must be inserted
         // into the orderbook.
-        if !incoming_order.is_closed() {
+        if let Ok(order) = incoming_order.try_into() {
             // SAFETY: This call is safe because we ensure that the
             // 'incoming_order' will enter the order book if, and only if, all
             // orders on the opposite side that match with it have already been
             // executed. This is explicit at `Order::trade(&mut incoming_trade,
             // &mut top_order)` returning `Err`.
             unsafe {
-                exchange.insert(incoming_order);
+                exchange.insert(order);
             }
         }
 

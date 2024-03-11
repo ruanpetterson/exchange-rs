@@ -24,7 +24,7 @@ jobs:
       with:
         components: clippy
         toolchain: nightly
-    - name: cargo fmt
+    - name: cargo clippy
       run: cargo clippy --workspace -- -Dwarnings -Dclippy::perf
   fmt:
     needs: check

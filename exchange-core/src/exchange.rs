@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::{Algo, Asset};
+use crate::{Algo, Asset, Trade};
 
 pub type Spread<Order> =
     (<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice);
@@ -13,7 +13,14 @@ pub type Volume<Order> =
 pub trait Exchange {
     type Algo: Algo;
     /// The type of order that will be stored in the exchange.
-    type Order: Asset;
+    type Order: Asset + Trade<Self::IncomingOrder>;
+    type IncomingOrder: Asset<
+        OrderAmount = <Self::Order as Asset>::OrderAmount,
+        OrderId = <Self::Order as Asset>::OrderId,
+        OrderPrice = <Self::Order as Asset>::OrderPrice,
+        OrderSide = <Self::Order as Asset>::OrderSide,
+        OrderStatus = <Self::Order as Asset>::OrderStatus,
+    >;
     type OrderRef<'e>: Deref<Target = Self::Order>
     where
         Self: 'e;
@@ -70,10 +77,11 @@ pub trait Exchange {
     /// order based on the orderbook's rules, such as price-time priority.
     fn matching(
         &mut self,
-        incoming_order: Self::Order,
+        incoming_order: Self::IncomingOrder,
     ) -> Result<<Self::Algo as Algo>::Output, <Self::Algo as Algo>::Error>
     where
         Self: ExchangeExt + Sized,
+        Self::Order: TryFrom<Self::IncomingOrder>,
     {
         <Self::Algo as Algo>::matching(self, incoming_order)
     }
