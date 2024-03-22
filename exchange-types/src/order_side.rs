@@ -19,3 +19,20 @@ impl Opposite for OrderSide {
         }
     }
 }
+
+#[cfg(feature = "rand")]
+mod __rand {
+    use rand::distributions::Standard;
+    use rand::prelude::*;
+
+    use super::*;
+
+    impl Distribution<OrderSide> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OrderSide {
+            match rng.gen_bool(0.5) {
+                true => OrderSide::Ask,
+                false => OrderSide::Bid,
+            }
+        }
+    }
+}

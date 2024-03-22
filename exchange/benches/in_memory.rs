@@ -2,7 +2,7 @@ use compact_str::CompactString;
 use criterion::{
     black_box, criterion_group, criterion_main, BatchSize, Criterion,
 };
-use exchange_rt::Engine;
+use exchange_rt::Runtime;
 use exchange_types::{OrderRequest, OrderSide};
 use rand::Rng;
 use uuid::Uuid;
@@ -31,7 +31,7 @@ pub fn in_memory(c: &mut Criterion) {
 
     c.bench_function("process", |b| {
         b.iter_batched(
-            || Engine::new(PAIR),
+            || Runtime::new(PAIR),
             |mut engine| {
                 let incoming_order = black_box(orders.next().unwrap());
                 black_box(engine.process(incoming_order))
