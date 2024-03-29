@@ -1,58 +1,44 @@
+use std::error::Error as StdError;
+use std::future::Future;
+use std::pin::Pin;
+
 use compact_str::CompactString;
-use exchange_algo::Orderbook;
-use exchange_core::Exchange;
-use exchange_types::{Order, OrderId, OrderRequest};
 use thiserror::Error;
 
-pub struct Engine {
-    pair: CompactString,
-    orderbook: Orderbook,
-}
+mod executor;
+pub use executor::Executor;
 
-impl Engine {
-    #[inline]
-    pub fn new(pair: &str) -> Self {
-        Self {
-            pair: CompactString::new_inline(pair),
-            orderbook: Orderbook::new(),
-        }
-    }
+mod request;
+pub use request::{Request, RequestError};
 
-    #[inline]
-    pub fn process(
+mod runtime;
+pub use runtime::Runtime;
+
+pub trait Read {
+    type Request;
+    fn recv(
         &mut self,
-        incoming_order: OrderRequest,
-    ) -> Result<(), EngineError> {
-        match incoming_order {
-            OrderRequest::Create { ref pair, .. } => {
-                if pair != &self.pair {
-                    Err(PairError::Mismatch {
-                        expected: self.pair.clone(),
-                        found: pair.clone(),
-                    })?;
-                }
-
-                let order = Order::try_from(incoming_order).unwrap();
-                let _ = self.orderbook.matching(order);
-            }
-            OrderRequest::Delete { order_id } => {
-                self.orderbook.remove(&OrderId::new(order_id));
-            }
-        };
-
-        Ok(())
-    }
-
-    #[inline]
-    pub fn orderbook(&self) -> &Orderbook {
-        &self.orderbook
-    }
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Self::Request,
+                        Box<dyn StdError + Send + Sync + 'static>,
+                    >,
+                > + Send
+                + '_,
+        >,
+    >;
 }
 
 #[derive(Debug, Error)]
-pub enum EngineError {
+pub enum ConnectorError {
+    #[error("already exists")]
+    Duplicated,
+    #[error("closed")]
+    Closed,
     #[error(transparent)]
-    PairError(#[from] PairError),
+    Other(#[from] Box<dyn StdError + Send + Sync + 'static>),
 }
 
 #[derive(Debug, Error)]
@@ -62,4 +48,12 @@ pub enum PairError {
         expected: CompactString,
         found: CompactString,
     },
+}
+
+#[derive(Debug, Error)]
+pub enum RuntimeError {
+    #[error(transparent)]
+    PairError(#[from] PairError),
+    #[error(transparent)]
+    ConnectorError(#[from] ConnectorError),
 }

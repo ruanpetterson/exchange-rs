@@ -80,3 +80,48 @@ impl Default for TimeInForce {
         Self::GoodTillCancel { post_only: false }
     }
 }
+
+#[cfg(feature = "rand")]
+mod __rand {
+    use rand::distributions::Standard;
+    use rand::prelude::*;
+
+    use super::*;
+
+    impl Distribution<OrderType> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OrderType {
+            match rng.gen_bool(0.8) {
+                true => OrderType::Limit {
+                    limit_price: rng.gen_range(
+                        Decimal::new(100, 0)..Decimal::new(10_000, 0),
+                    ),
+                    time_in_force: rng.gen(),
+                    amount: rng.gen_range(
+                        Decimal::new(100, 0)..Decimal::new(10_000, 0),
+                    ),
+                    filled: Decimal::ZERO,
+                },
+                false => OrderType::Market {
+                    all_or_none: rng.gen_bool(0.01),
+                    amount: rng.gen_range(
+                        Decimal::new(100, 0)..Decimal::new(10_000, 0),
+                    ),
+                    filled: Decimal::ZERO,
+                },
+            }
+        }
+    }
+
+    impl Distribution<TimeInForce> for Standard {
+        fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TimeInForce {
+            match rng.gen_bool(0.95) {
+                true => TimeInForce::GoodTillCancel {
+                    post_only: rng.gen_bool(0.1),
+                },
+                false => TimeInForce::ImmediateOrCancel {
+                    all_or_none: rng.gen_bool(0.05),
+                },
+            }
+        }
+    }
+}
