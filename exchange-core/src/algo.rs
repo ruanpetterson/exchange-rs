@@ -1,7 +1,7 @@
-use crate::{Exchange, ExchangeExt};
+use crate::{Asset, Exchange, ExchangeExt, Trade};
 
 /// Core exchange algorithm.
-pub trait Algo {
+pub trait Algo<O> {
     type Error;
     type Output;
 
@@ -12,9 +12,16 @@ pub trait Algo {
     /// order based on the orderbook's rules, such as price-time priority.
     fn matching<E>(
         exchange: &mut E,
-        incoming_order: <E as Exchange>::IncomingOrder,
+        incoming_order: O,
     ) -> Result<Self::Output, Self::Error>
     where
         E: Exchange + ExchangeExt,
-        <E as Exchange>::Order: TryFrom<<E as Exchange>::IncomingOrder>;
+        <E as Exchange>::Order: Trade<O> + TryFrom<O>,
+        O: Asset<
+            OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
+            OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+            OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+            OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
+            OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
+        >;
 }

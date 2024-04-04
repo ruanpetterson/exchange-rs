@@ -35,9 +35,8 @@ impl Default for Orderbook {
 }
 
 impl Exchange for Orderbook {
-    type Algo = MatchingAlgo;
+    type Algo<O> = MatchingAlgo;
     type Order = LimitOrder;
-    type IncomingOrder = Order;
     type OrderRef<'e> = &'e LimitOrder where Self: 'e;
     type OrderRefMut<'e> = &'e mut LimitOrder where Self: 'e;
 

@@ -11,16 +11,9 @@ pub type Volume<Order> =
 ///
 /// This is the core trait for exchange implementation.
 pub trait Exchange {
-    type Algo: Algo;
+    type Algo<O>: Algo<O>;
     /// The type of order that will be stored in the exchange.
-    type Order: Asset + Trade<Self::IncomingOrder>;
-    type IncomingOrder: Asset<
-        OrderAmount = <Self::Order as Asset>::OrderAmount,
-        OrderId = <Self::Order as Asset>::OrderId,
-        OrderPrice = <Self::Order as Asset>::OrderPrice,
-        OrderSide = <Self::Order as Asset>::OrderSide,
-        OrderStatus = <Self::Order as Asset>::OrderStatus,
-    >;
+    type Order: Asset;
     type OrderRef<'e>: Deref<Target = Self::Order>
     where
         Self: 'e;
@@ -75,15 +68,28 @@ pub trait Exchange {
     /// This method takes an order as input and attempts to match it against the
     /// existing limit orders in the orderbook. Matching is done in a specific
     /// order based on the orderbook's rules, such as price-time priority.
-    fn matching(
+    // TODO: Consider creating a dedicated `Error` type for `Exchange`, and make
+    //       it mandatory for concrete types to implement this method.
+    #[allow(clippy::type_complexity)]
+    fn matching<O>(
         &mut self,
-        incoming_order: Self::IncomingOrder,
-    ) -> Result<<Self::Algo as Algo>::Output, <Self::Algo as Algo>::Error>
+        incoming_order: O,
+    ) -> Result<
+        <Self::Algo<O> as Algo<O>>::Output,
+        <Self::Algo<O> as Algo<O>>::Error,
+    >
     where
         Self: ExchangeExt + Sized,
-        Self::Order: TryFrom<Self::IncomingOrder>,
+        Self::Order: Trade<O> + TryFrom<O>,
+        O: Asset<
+            OrderAmount = <<Self as Exchange>::Order as Asset>::OrderAmount,
+            OrderId = <<Self as Exchange>::Order as Asset>::OrderId,
+            OrderPrice = <<Self as Exchange>::Order as Asset>::OrderPrice,
+            OrderSide = <<Self as Exchange>::Order as Asset>::OrderSide,
+            OrderStatus = <<Self as Exchange>::Order as Asset>::OrderStatus,
+        >,
     {
-        <Self::Algo as Algo>::matching(self, incoming_order)
+        <Self::Algo<O> as Algo<O>>::matching(self, incoming_order)
     }
 }
 
