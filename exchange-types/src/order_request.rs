@@ -3,7 +3,11 @@ use rust_decimal::Decimal;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{Order, OrderId, OrderSide, OrderType, TimeInForce};
+use crate::Order;
+use crate::OrderId;
+use crate::OrderSide;
+use crate::OrderType;
+use crate::TimeInForce;
 
 #[derive(Debug, Error)]
 pub enum OrderRequestError {

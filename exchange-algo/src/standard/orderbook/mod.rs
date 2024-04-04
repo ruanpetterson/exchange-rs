@@ -3,11 +3,17 @@ mod index;
 use std::collections::btree_map::Entry;
 use std::marker::PhantomData;
 
-use exchange_core::{Asset, Exchange, ExchangeExt};
-use exchange_types::{LimitOrder, Order, OrderSide, Trade};
+use exchange_core::Asset;
+use exchange_core::Exchange;
+use exchange_core::ExchangeExt;
+use exchange_types::LimitOrder;
+use exchange_types::Order;
+use exchange_types::OrderSide;
+use exchange_types::Trade;
 use num::Zero;
 
-use crate::standard::orderbook::index::{OrdersById, OrdersBySide};
+use crate::standard::orderbook::index::OrdersById;
+use crate::standard::orderbook::index::OrdersBySide;
 use crate::standard::MatchingAlgo;
 
 pub struct Orderbook {

@@ -1,13 +1,19 @@
 use std::borrow::Borrow;
-use std::cmp::{Ordering, Reverse};
+use std::cmp::Ordering;
+use std::cmp::Reverse;
 use std::ops::AddAssign;
 
 use exchange_core::Asset;
 use rust_decimal::Decimal;
 
-use crate::error::{OrderError, TradeError};
+use crate::error::OrderError;
+use crate::error::TradeError;
 use crate::order_type::TimeInForce;
-use crate::{OrderId, OrderSide, OrderStatus, OrderType, Trade};
+use crate::OrderId;
+use crate::OrderSide;
+use crate::OrderStatus;
+use crate::OrderType;
+use crate::Trade;
 
 mod limit;
 pub use limit::LimitOrder;

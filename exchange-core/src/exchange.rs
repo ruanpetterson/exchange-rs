@@ -1,6 +1,9 @@
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
+use std::ops::DerefMut;
 
-use crate::{Algo, Asset, Trade};
+use crate::Algo;
+use crate::Asset;
+use crate::Trade;
 
 pub type Spread<Order> =
     (<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice);

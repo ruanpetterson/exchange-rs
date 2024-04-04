@@ -1,4 +1,7 @@
-use crate::{Asset, Exchange, ExchangeExt, Trade};
+use crate::Asset;
+use crate::Exchange;
+use crate::ExchangeExt;
+use crate::Trade;
 
 /// Core exchange algorithm.
 pub trait Algo<O> {

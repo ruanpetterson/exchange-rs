@@ -1,5 +1,7 @@
-use std::collections::{BTreeMap, VecDeque};
-use std::ops::{Deref, DerefMut};
+use std::collections::BTreeMap;
+use std::collections::VecDeque;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use exchange_core::Asset;
 

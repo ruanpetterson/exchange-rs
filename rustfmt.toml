@@ -1,5 +1,8 @@
 edition = "2021"
 max_width = 80
-reorder_imports = true
+format_strings = true
 group_imports = "StdExternalCrate"
+imports_granularity = "Item"
+normalize_comments = true
+reorder_imports = true
 wrap_comments = true

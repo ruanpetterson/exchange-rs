@@ -1,6 +1,8 @@
 use std::borrow::Borrow;
 use std::collections::VecDeque;
-use std::ops::{Deref, Index, IndexMut};
+use std::ops::Deref;
+use std::ops::Index;
+use std::ops::IndexMut;
 
 use either::Either;
 use exchange_core::Asset;

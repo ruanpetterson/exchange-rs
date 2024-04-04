@@ -1,10 +1,12 @@
 use std::io;
-use std::io::{Result, Write};
+use std::io::Result;
+use std::io::Write;
 
 use clap::Parser;
 use compact_str::CompactString;
 use crossbeam::channel::Sender;
-use exchange_types::{OrderRequest, OrderSide};
+use exchange_types::OrderRequest;
+use exchange_types::OrderSide;
 use rand::Rng;
 use rayon::prelude::*;
 use uuid::Uuid;

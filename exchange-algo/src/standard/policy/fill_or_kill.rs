@@ -1,6 +1,9 @@
 use std::ops::ControlFlow;
 
-use exchange_core::{Asset, Exchange, Opposite, Trade};
+use exchange_core::Asset;
+use exchange_core::Exchange;
+use exchange_core::Opposite;
+use exchange_core::Trade;
 use num::Zero;
 
 use super::seq;

@@ -1,8 +1,11 @@
-use exchange_core::{Asset as _, Trade as _};
+use exchange_core::Asset as _;
+use exchange_core::Trade as _;
 use rust_decimal::Decimal;
 
 use crate::error::TradeError;
-use crate::{LimitOrder, Order, OrderId};
+use crate::LimitOrder;
+use crate::Order;
+use crate::OrderId;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]

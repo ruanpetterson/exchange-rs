@@ -5,7 +5,8 @@
 
 use exchange_algo::Orderbook;
 use exchange_core::Exchange;
-use exchange_types::{Order, OrderSide};
+use exchange_types::Order;
+use exchange_types::OrderSide;
 use rust_decimal_macros::dec;
 use tap::Tap;
 

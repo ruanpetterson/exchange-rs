@@ -1,4 +1,6 @@
-use exchange_core::{Asset, Exchange, Trade};
+use exchange_core::Asset;
+use exchange_core::Exchange;
+use exchange_core::Trade;
 
 use super::seq;
 use super::Policy;

@@ -1,14 +1,24 @@
 use std::borrow::Borrow;
-use std::cmp::{Ordering, Reverse};
+use std::cmp::Ordering;
+use std::cmp::Reverse;
 use std::ops::AddAssign as _;
 
-use exchange_core::{Asset, Trade};
+use exchange_core::Asset;
+use exchange_core::Trade;
 use rust_decimal::Decimal;
 
-use crate::error::{
-    ConversionError, OrderError, PriceError, SideError, StatusError, TradeError,
-};
-use crate::{Order, OrderId, OrderSide, OrderStatus, OrderType, TimeInForce};
+use crate::error::ConversionError;
+use crate::error::OrderError;
+use crate::error::PriceError;
+use crate::error::SideError;
+use crate::error::StatusError;
+use crate::error::TradeError;
+use crate::Order;
+use crate::OrderId;
+use crate::OrderSide;
+use crate::OrderStatus;
+use crate::OrderType;
+use crate::TimeInForce;
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

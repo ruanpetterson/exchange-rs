@@ -1,5 +1,6 @@
 use std::error::Error;
-use std::ops::{Add, Sub};
+use std::ops::Add;
+use std::ops::Sub;
 
 use num::Zero;
 

@@ -11,7 +11,10 @@ mod seq {
     impl Seq for Late {}
 }
 
-use exchange_core::{Asset, Exchange, ExchangeExt, Trade};
+use exchange_core::Asset;
+use exchange_core::Exchange;
+use exchange_core::ExchangeExt;
+use exchange_core::Trade;
 
 use self::fill_or_kill::FillOrKill;
 use self::immediate_or_cancel::ImmediateOrCancel;
