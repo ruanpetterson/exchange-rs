@@ -4,18 +4,25 @@ mod policy;
 use exchange_core::{Algo, Asset, Exchange, ExchangeExt, Opposite, Trade};
 
 pub struct MatchingAlgo;
-impl Algo for MatchingAlgo {
+impl<O> Algo<O> for MatchingAlgo {
     type Error = DefaultExchangeError;
     type Output = ();
 
     #[inline]
     fn matching<E>(
         exchange: &mut E,
-        mut incoming_order: <E as Exchange>::IncomingOrder,
+        mut incoming_order: O,
     ) -> Result<(), DefaultExchangeError>
     where
         E: Exchange + ExchangeExt,
-        <E as Exchange>::Order: TryFrom<<E as Exchange>::IncomingOrder>,
+        <E as Exchange>::Order: Trade<O> + TryFrom<O>,
+        O: Asset<
+            OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
+            OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+            OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+            OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
+            OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
+        >,
     {
         policy::before_policies()
             .iter()

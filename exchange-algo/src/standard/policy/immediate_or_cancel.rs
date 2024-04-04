@@ -1,11 +1,23 @@
-use exchange_core::{Asset, Exchange};
+use exchange_core::{Asset, Exchange, Trade};
 
+use super::seq;
 use super::Policy;
 
 pub(super) struct ImmediateOrCancel;
-impl<E: Exchange> Policy<E> for ImmediateOrCancel {
+impl<O, E> Policy<O, E, seq::Late> for ImmediateOrCancel
+where
+    E: Exchange,
+    <E as Exchange>::Order: Trade<O>,
+    O: Asset<
+        OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
+        OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+        OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+        OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
+        OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
+    >,
+{
     #[inline]
-    fn enforce(incoming_order: &mut E::IncomingOrder, _: &E) {
+    fn enforce(incoming_order: &mut O, _: &E) {
         if incoming_order.is_immediate_or_cancel() {
             // If incoming order is immediate or cancel, it must be closed
             // at the end of matching.

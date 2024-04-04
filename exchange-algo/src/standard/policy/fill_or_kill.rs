@@ -3,12 +3,24 @@ use std::ops::ControlFlow;
 use exchange_core::{Asset, Exchange, Opposite, Trade};
 use num::Zero;
 
+use super::seq;
 use super::Policy;
 
 pub(super) struct FillOrKill;
-impl<E: Exchange> Policy<E> for FillOrKill {
+impl<O, E> Policy<O, E, seq::Before> for FillOrKill
+where
+    E: Exchange,
+    <E as Exchange>::Order: Trade<O>,
+    O: Asset<
+        OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
+        OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+        OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+        OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
+        OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
+    >,
+{
     #[inline]
-    fn enforce(incoming_order: &mut E::IncomingOrder, exchange: &E) {
+    fn enforce(incoming_order: &mut O, exchange: &E) {
         if incoming_order.is_fill_or_kill()
             && !FillOrKill::can_fill(incoming_order, exchange)
         {
@@ -33,10 +45,18 @@ impl FillOrKill {
     /// given that no matter what else happens, the result will also be
     /// `true`.
     #[inline]
-    fn can_fill<E: Exchange>(
-        incoming_order: &E::IncomingOrder,
-        exchange: &E,
-    ) -> bool {
+    fn can_fill<O, E>(incoming_order: &O, exchange: &E) -> bool
+    where
+        E: Exchange,
+        <E as Exchange>::Order: Trade<O>,
+        O: Asset<
+            OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
+            OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+            OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+            OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
+            OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
+        >,
+    {
         exchange
             .iter(&incoming_order.side().opposite())
             .take_while(|order| {
