@@ -82,6 +82,11 @@ impl Exchange for Orderbook {
     ) -> Option<Self::Order> {
         let order = self.orders_by_id.remove(order_id)?;
 
+        assert!(
+            &order.id() == order_id,
+            "order id must be the same; something is wrong otherwise"
+        );
+
         let limit_price = order
             .limit_price()
             .expect("bookable orders must have a limit price");
@@ -93,7 +98,7 @@ impl Exchange for Orderbook {
         };
 
         // This prevents dangling levels (level with no orders).
-        if level.get().len() == 1 {
+        let order_id = if level.get().len() == 1 {
             level.remove().pop_front()
         } else {
             level
@@ -105,7 +110,7 @@ impl Exchange for Orderbook {
         .expect("indexed orders must be in the book tree");
 
         assert!(
-            &order.id() == order_id,
+            order.id() == order_id,
             "order id must be the same; something is wrong otherwise"
         );
 
@@ -147,10 +152,17 @@ impl Exchange for Orderbook {
         }
         .expect("level should always have an order");
 
-        self.orders_by_id
+        let order = self
+            .orders_by_id
             .remove(&order_id)
-            .expect("every order that lives in tree must also be in the index")
-            .into()
+            .expect("every order that lives in tree must also be in the index");
+
+        assert!(
+            order.id() == order_id,
+            "order id must be the same; something is wrong otherwise"
+        );
+
+        order.into()
     }
 }
 
