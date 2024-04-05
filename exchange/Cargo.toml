@@ -15,13 +15,14 @@ exchange-rt = { path = "../exchange-rt" }
 exchange-types = { path = "../exchange-types" }
 
 anyhow = "~1.0"
+arrayvec = "0.7.4"
 clap = { version = "3.2.23", features = ["clap_derive", "derive"] }
 compact_str = { version = "0.7.1", features = ["serde"] }
 crossbeam = { version = "0.8.2", features = ["crossbeam-channel"] }
 mimalloc = { version = "0.1.39", default-features = false }
+num_cpus = "1.16.0"
 owo-colors = "3.5.0"
 rand = "0.8.5"
-rayon = "1.8.0"
 rust_decimal = "1.31.0"
 serde = { version = "~1.0", features = ["derive"], optional = true }
 serde_json = { version = "~1.0", optional = true }
