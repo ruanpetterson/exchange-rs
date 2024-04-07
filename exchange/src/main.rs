@@ -2,7 +2,6 @@ use std::fs;
 use std::io;
 use std::io::BufRead;
 use std::path::PathBuf;
-use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Result;
@@ -34,7 +33,7 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let (tx, rx) = mpsc::sync_channel(128 * 1024);
+    let (tx, rx) = crossbeam::channel::bounded(128 * 1024);
 
     std::thread::spawn(move || -> Result<()> {
         let mut reader = io::BufReader::new(args.input.unwrap_or_default());

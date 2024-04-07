@@ -1,6 +1,7 @@
 mod index;
 
 use std::collections::btree_map::Entry;
+use std::collections::VecDeque;
 use std::marker::PhantomData;
 
 use exchange_core::Asset;
@@ -69,7 +70,7 @@ impl Exchange for Orderbook {
                     .limit_price()
                     .expect("bookable orders must have a limit price"),
             )
-            .or_default()
+            .or_insert_with(|| VecDeque::with_capacity(8))
             .push_back(order.id());
 
         self.orders_by_id.insert(order.id(), order);
