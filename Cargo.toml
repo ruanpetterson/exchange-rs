@@ -1,13 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
-    "exchange",
-    "exchange-algo",
-    "exchange-core",
-    "exchange-rt",
-    "exchange-types",
-]
+members = ["exchange-core", "exchange-types", "matching-engine/*"]
 
 [profile.release]
 strip = true

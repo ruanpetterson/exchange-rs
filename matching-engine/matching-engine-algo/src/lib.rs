@@ -1,12 +1,16 @@
-pub mod orderbook;
-mod policy;
-
 use exchange_core::Algo;
 use exchange_core::Asset;
 use exchange_core::Exchange;
 use exchange_core::ExchangeExt;
 use exchange_core::Opposite;
 use exchange_core::Trade;
+
+mod orderbook;
+pub use orderbook::Orderbook;
+#[cfg(any(test, feature = "test"))]
+pub use orderbook::__fmt::OrderbookView;
+
+mod policy;
 
 pub struct MatchingAlgo;
 impl<O> Algo<O> for MatchingAlgo {

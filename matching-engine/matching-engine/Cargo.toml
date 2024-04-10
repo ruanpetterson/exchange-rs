@@ -1,18 +1,19 @@
 [package]
-name = "exchange"
+name = "matching-engine"
 version = "0.2.0"
 edition = "2021"
-default-run = "exchange"
+default-run = "matching-engine"
 
 [features]
 default = ["serde"]
 serde = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
-exchange-algo = { path = "../exchange-algo" }
-exchange-core = { path = "../exchange-core" }
-exchange-rt = { path = "../exchange-rt" }
-exchange-types = { path = "../exchange-types" }
+exchange-core = { path = "../../exchange-core" }
+exchange-types = { path = "../../exchange-types" }
+
+matching-engine-algo = { path = "../matching-engine-algo" }
+matching-engine-rt = { path = "../matching-engine-rt" }
 
 anyhow = "~1.0"
 arrayvec = "0.7.4"
@@ -30,7 +31,7 @@ thiserror = "~1.0"
 uuid = { version = "1.5.0", features = ["rand", "v4"] }
 
 [dev-dependencies]
-exchange-algo = { path = "../exchange-algo", features = ["test"] }
+matching-engine-algo = { path = "../matching-engine-algo", features = ["test"] }
 
 criterion = "0.5.1"
 insta = "1.34.0"
@@ -42,6 +43,6 @@ tap = "1.0.1"
 name = "generator"
 required-features = ["serde"]
 
-[[bench]]
-name = "in_memory"
-harness = false
+# [[bench]]
+# name = "in_memory"
+# harness = false

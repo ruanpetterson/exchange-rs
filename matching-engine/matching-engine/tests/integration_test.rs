@@ -1,8 +1,8 @@
-use exchange_algo::Orderbook;
 use exchange_core::Asset;
 use exchange_core::Trade as _;
 use exchange_types::LimitOrder;
 use exchange_types::Order;
+use matching_engine_algo::Orderbook;
 use once_cell::sync::Lazy;
 
 static ORDERS: Lazy<Box<[Order]>> = Lazy::new(|| {

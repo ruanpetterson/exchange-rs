@@ -13,9 +13,9 @@ use exchange_types::OrderSide;
 use exchange_types::Trade;
 use num::Zero;
 
-use crate::standard::orderbook::index::OrdersById;
-use crate::standard::orderbook::index::OrdersBySide;
-use crate::standard::MatchingAlgo;
+use crate::orderbook::index::OrdersById;
+use crate::orderbook::index::OrdersBySide;
+use crate::MatchingAlgo;
 
 pub struct Orderbook {
     orders_by_id: OrdersById<LimitOrder>,

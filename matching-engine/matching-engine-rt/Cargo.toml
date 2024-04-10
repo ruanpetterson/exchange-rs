@@ -1,12 +1,12 @@
 [package]
-name = "exchange-rt"
+name = "matching-engine-rt"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-exchange-algo = { path = "../exchange-algo" }
-exchange-core = { path = "../exchange-core" }
-exchange-types = { path = "../exchange-types" }
+exchange-core = { path = "../../exchange-core" }
+exchange-types = { path = "../../exchange-types" }
+matching-engine-algo = { path = "../matching-engine-algo" }
 
 compact_str = { version = "0.7.0", features = ["serde"] }
 rust_decimal = "1.29.1"

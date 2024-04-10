@@ -4,9 +4,9 @@ use criterion::criterion_group;
 use criterion::criterion_main;
 use criterion::BatchSize;
 use criterion::Criterion;
-use exchange_rt::Engine;
 use exchange_types::OrderRequest;
 use exchange_types::OrderSide;
+use matching_engine_rt::Engine;
 use rand::Rng;
 use uuid::Uuid;
 
