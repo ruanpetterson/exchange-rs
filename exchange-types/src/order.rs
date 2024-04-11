@@ -239,14 +239,16 @@ mod builder {
 
     use super::*;
 
+    enum Uninhabited {}
+
     pub struct Builder<S, T> {
         side: S,
         type_: MaybeUninit<OrderType>,
         type_variant: PhantomData<T>,
     }
 
-    pub struct Limit<T>(PhantomData<T>);
-    pub struct Market {}
+    pub struct Limit<T>(Uninhabited, PhantomData<T>);
+    pub struct Market(Uninhabited);
 
     pub trait TypeVariant {}
     impl<T: LimitTypeVariant> TypeVariant for Limit<T> {}
