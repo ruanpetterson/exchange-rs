@@ -26,10 +26,10 @@ pub struct LimitOrder {
     id: OrderId,
     side: OrderSide,
     limit_price: Decimal,
-    /// Time in force policies provide guarantees about the lifetime of an
-    /// [order](Order).
-    #[cfg_attr(feature = "serde", serde(default))]
-    time_in_force: TimeInForce,
+    /// The post-only flag indicates that the order should only make
+    /// liquidity. If any part of the order results in taking liquidity,
+    /// the order will be rejected and no part of it will execute.
+    post_only: bool,
     amount: Decimal,
     #[cfg_attr(feature = "serde", serde(default))]
     filled: Decimal,
@@ -165,7 +165,7 @@ impl Asset for LimitOrder {
 
     #[inline]
     fn is_post_only(&self) -> bool {
-        matches!(self.time_in_force, TimeInForce::GoodTillCancel { post_only } if post_only)
+        self.post_only
     }
 
     #[inline]
@@ -231,7 +231,9 @@ impl From<LimitOrder> for Order {
             side: order.side,
             type_: OrderType::Limit {
                 limit_price: order.limit_price,
-                time_in_force: order.time_in_force,
+                time_in_force: TimeInForce::GoodTillCancel {
+                    post_only: order.post_only,
+                },
                 amount: order.amount,
                 filled: order.filled,
             },
@@ -246,7 +248,7 @@ impl TryFrom<Order> for LimitOrder {
     fn try_from(order: Order) -> Result<Self, Self::Error> {
         let OrderType::Limit {
             limit_price,
-            time_in_force,
+            time_in_force: TimeInForce::GoodTillCancel { post_only },
             amount,
             filled,
         } = order.type_
@@ -262,7 +264,7 @@ impl TryFrom<Order> for LimitOrder {
             id: order.id,
             side: order.side,
             limit_price,
-            time_in_force,
+            post_only,
             amount,
             filled,
             status: order.status,
