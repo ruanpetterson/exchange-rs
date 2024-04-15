@@ -1,11 +1,12 @@
 use exchange_core::Asset as _;
 use exchange_core::Trade as _;
-use rust_decimal::Decimal;
 
 use crate::error::TradeError;
+use crate::Amount;
 use crate::LimitOrder;
 use crate::Order;
 use crate::OrderId;
+use crate::Price;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
@@ -13,8 +14,8 @@ use crate::OrderId;
 pub struct Trade {
     pub(crate) taker: OrderId,
     pub(crate) maker: OrderId,
-    pub(crate) amount: Decimal,
-    pub(crate) price: Decimal,
+    pub(crate) amount: Amount,
+    pub(crate) price: Price,
 }
 
 impl Trade {
@@ -43,7 +44,7 @@ impl Trade {
 
     /// Returns the traded price.
     #[inline]
-    pub fn price(&self) -> Decimal {
+    pub fn price(&self) -> Price {
         self.price
     }
 }

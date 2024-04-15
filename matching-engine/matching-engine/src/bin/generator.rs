@@ -12,6 +12,7 @@ use crossbeam::channel::Sender;
 use exchange_types::OrderRequest;
 use exchange_types::OrderSide;
 use rand::Rng;
+use rust_decimal::Decimal;
 use uuid::Uuid;
 
 type Message = ArrayVec<u8, 256>;
@@ -69,10 +70,10 @@ fn worker(
         },
         _ => OrderRequest::Create {
             account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-            amount: rng.gen_range(100..10_000).into(),
+            amount: Decimal::from(rng.gen_range(100..10_000)).into(),
             order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
             pair: CompactString::new_inline("BTC/USDC"),
-            limit_price: rng.gen_range(100..10_000).into(),
+            limit_price: Decimal::from(rng.gen_range(100..10_000)).into(),
             side: match rng.gen_range(0..2) {
                 0 => OrderSide::Ask,
                 _ => OrderSide::Bid,

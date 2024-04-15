@@ -5,7 +5,6 @@ use std::ops::AddAssign as _;
 
 use exchange_core::Asset;
 use exchange_core::Trade;
-use rust_decimal::Decimal;
 
 use crate::error::ConversionError;
 use crate::error::OrderError;
@@ -13,11 +12,13 @@ use crate::error::PriceError;
 use crate::error::SideError;
 use crate::error::StatusError;
 use crate::error::TradeError;
+use crate::Amount;
 use crate::Order;
 use crate::OrderId;
 use crate::OrderSide;
 use crate::OrderStatus;
 use crate::OrderType;
+use crate::Price;
 use crate::TimeInForce;
 
 #[derive(Clone, Copy, Debug)]
@@ -25,14 +26,14 @@ use crate::TimeInForce;
 pub struct LimitOrder {
     id: OrderId,
     side: OrderSide,
-    limit_price: Decimal,
+    limit_price: Price,
     /// The post-only flag indicates that the order should only make
     /// liquidity. If any part of the order results in taking liquidity,
     /// the order will be rejected and no part of it will execute.
     post_only: bool,
-    amount: Decimal,
+    amount: Amount,
     #[cfg_attr(feature = "serde", serde(default))]
-    filled: Decimal,
+    filled: Amount,
     status: OrderStatus,
 }
 
@@ -43,7 +44,7 @@ impl LimitOrder {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
-    pub(crate) fn fill(&mut self, amount: Decimal) {
+    pub(crate) fn fill(&mut self, amount: Amount) {
         self.try_fill(amount)
             .expect("order does not have available amount to fill")
     }
@@ -55,7 +56,7 @@ impl LimitOrder {
     /// This results in an unreliable state when current `Order::filled`
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
-    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Decimal) {
+    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Amount) {
         self.filled.add_assign(amount);
 
         self.status = if self.remaining().is_zero() {
@@ -70,7 +71,7 @@ impl LimitOrder {
     #[inline]
     pub(crate) fn try_fill(
         &mut self,
-        amount: Decimal,
+        amount: Amount,
     ) -> Result<(), OrderError> {
         if amount.is_zero() {
             return Err(OrderError::NoFill);
@@ -110,9 +111,9 @@ impl PartialOrd for LimitOrder {
 }
 
 impl Asset for LimitOrder {
-    type OrderAmount = Decimal;
+    type OrderAmount = Amount;
     type OrderId = OrderId;
-    type OrderPrice = Decimal;
+    type OrderPrice = Price;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = crate::Trade;
