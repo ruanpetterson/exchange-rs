@@ -1,4 +1,5 @@
-use rust_decimal::Decimal;
+use crate::Amount;
+use crate::Price;
 
 /// The order type you specify will influence which other order parameters are
 /// required as well as how your order will be executed by the matching engine.
@@ -12,14 +13,14 @@ pub enum OrderType {
     /// to buy or sell, and the price is the price per bitcoin. The limit order
     /// will be filled at the price specified or better.
     Limit {
-        limit_price: Decimal,
+        limit_price: Price,
         /// Time in force policies provide guarantees about the lifetime of an
         /// [order](Order).
         #[cfg_attr(feature = "serde", serde(default))]
         time_in_force: TimeInForce,
-        amount: Decimal,
+        amount: Amount,
         #[cfg_attr(feature = "serde", serde(default))]
-        filled: Decimal,
+        filled: Amount,
     },
     /// Market orders differ from limit orders in that they provide no pricing
     /// guarantees. They however do provide a way to buy or sell specific
@@ -32,9 +33,9 @@ pub enum OrderType {
         /// is considered a fill or kill order.
         #[cfg_attr(feature = "serde", serde(default))]
         all_or_none: bool,
-        amount: Decimal,
+        amount: Amount,
         #[cfg_attr(feature = "serde", serde(default))]
-        filled: Decimal,
+        filled: Amount,
     },
 }
 

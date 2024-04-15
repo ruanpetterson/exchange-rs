@@ -9,10 +9,12 @@ use rust_decimal::Decimal;
 use crate::error::OrderError;
 use crate::error::TradeError;
 use crate::order_type::TimeInForce;
+use crate::Amount;
 use crate::OrderId;
 use crate::OrderSide;
 use crate::OrderStatus;
 use crate::OrderType;
+use crate::Price;
 use crate::Trade;
 
 mod limit;
@@ -50,17 +52,17 @@ impl Order {
     pub fn new_limit(
         id: OrderId,
         side: OrderSide,
-        limit_price: Decimal,
-        amount: Decimal,
+        limit_price: impl Into<Price>,
+        amount: impl Into<Amount>,
     ) -> Self {
         Self {
             id,
             side,
             type_: OrderType::Limit {
-                limit_price,
+                limit_price: limit_price.into(),
                 time_in_force: Default::default(),
-                amount,
-                filled: Decimal::ZERO,
+                amount: amount.into(),
+                filled: Decimal::ZERO.into(),
             },
             status: OrderStatus::Open,
         }
@@ -72,7 +74,7 @@ impl Order {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
-    pub(crate) fn fill(&mut self, amount: Decimal) {
+    pub(crate) fn fill(&mut self, amount: Amount) {
         self.try_fill(amount)
             .expect("order does not have available amount to fill")
     }
@@ -84,7 +86,7 @@ impl Order {
     /// This results in an unreliable state when current `Order::filled`
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
-    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Decimal) {
+    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Amount) {
         let filled = match self.type_ {
             OrderType::Limit { ref mut filled, .. }
             | OrderType::Market { ref mut filled, .. } => filled,
@@ -104,7 +106,7 @@ impl Order {
     #[inline]
     pub(crate) fn try_fill(
         &mut self,
-        amount: Decimal,
+        amount: Amount,
     ) -> Result<(), OrderError> {
         if amount.is_zero() {
             return Err(OrderError::NoFill);
@@ -144,9 +146,9 @@ impl PartialOrd for Order {
 }
 
 impl Asset for Order {
-    type OrderAmount = Decimal;
+    type OrderAmount = Amount;
     type OrderId = OrderId;
-    type OrderPrice = Decimal;
+    type OrderPrice = Price;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = Trade;
@@ -285,16 +287,16 @@ mod builder {
 
     impl<T> Builder<OrderSide, T> {
         #[inline]
-        pub const fn limit(
+        pub fn limit(
             &self,
-            limit_price: Decimal,
-            amount: Decimal,
+            limit_price: impl Into<Price>,
+            amount: impl Into<Amount>,
         ) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let type_ = OrderType::Limit {
-                limit_price,
+                limit_price: limit_price.into(),
                 time_in_force: TimeInForce::GoodTillCancel { post_only: false },
-                amount,
-                filled: Decimal::ZERO,
+                amount: amount.into(),
+                filled: Decimal::ZERO.into(),
             };
 
             Builder {
@@ -305,14 +307,14 @@ mod builder {
         }
 
         #[inline]
-        pub const fn market(
+        pub fn market(
             &self,
-            amount: Decimal,
+            amount: impl Into<Amount>,
         ) -> Builder<OrderSide, Market> {
             let type_ = OrderType::Market {
                 all_or_none: false,
-                amount,
-                filled: Decimal::ZERO,
+                amount: amount.into(),
+                filled: Decimal::ZERO.into(),
             };
 
             Builder {
