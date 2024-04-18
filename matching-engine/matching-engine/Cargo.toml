@@ -17,7 +17,7 @@ matching-engine-rt = { path = "../matching-engine-rt" }
 
 anyhow = { workspace = true }
 arrayvec = { workspace = true }
-clap = { workspace = true, features = ["clap_derive", "derive"] }
+clap = { workspace = true, features = ["derive"] }
 compact_str = { workspace = true, features = ["serde"] }
 crossbeam = { workspace = true, features = ["crossbeam-channel"] }
 mimalloc = { workspace = true }

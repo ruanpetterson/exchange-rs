@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs;
 use std::io;
 use std::io::BufRead;
@@ -19,15 +20,20 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 struct Args {
     #[clap(short, long, default_value = "BTC/USDC")]
     pair: CompactString,
-    #[clap(short, long, parse(from_str), help = "Orders source")]
-    input: Option<Input>,
     #[clap(
         short,
         long,
-        parse(from_str),
+        default_value_t = Input::default(),
+        help = "Orders source"
+    )]
+    input: Input,
+    #[clap(
+        short,
+        long,
+        default_value_t = Output::default(),
         help = "Orderbook events destination"
     )]
-    output: Option<Output>,
+    output: Output,
 }
 
 fn main() -> Result<()> {
@@ -36,7 +42,7 @@ fn main() -> Result<()> {
     let (tx, rx) = crossbeam::channel::bounded(128 * 1024);
 
     std::thread::spawn(move || -> Result<()> {
-        let mut reader = io::BufReader::new(args.input.unwrap_or_default());
+        let mut reader = io::BufReader::new(args.input);
         let mut buf = String::with_capacity(1024);
         while reader.read_line(&mut buf).is_ok() {
             let order = serde_json::from_str(&buf);
@@ -90,21 +96,29 @@ fn main() -> Result<()> {
     eprintln!("{:>8} {}", "Ask".bold().green(), ask_length);
     eprintln!("{:>8} {}", "Bid".bold().green(), bid_length);
 
-    match &args.output.unwrap_or_default() {
-        Output::Stdout => {
-            // TODO: impl serde feature
-        }
-        Output::File(_path) => unimplemented!(),
+    // TODO: use this as `io::Write` instead relying on `(e)println`s.
+    match &args.output {
+        Output::Stdout => {}
+        Output::File(_path) => {}
     };
 
     Ok(())
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 enum Input {
     #[default]
     Stdin,
     File(PathBuf),
+}
+
+impl fmt::Display for Input {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Input::Stdin => "/dev/stdin".fmt(f),
+            Input::File(path) => path.display().fmt(f),
+        }
+    }
 }
 
 impl From<&str> for Input {
@@ -124,11 +138,20 @@ impl io::Read for Input {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 enum Output {
     #[default]
     Stdout,
     File(PathBuf),
+}
+
+impl fmt::Display for Output {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Output::Stdout => "/dev/stdout".fmt(f),
+            Output::File(path) => path.display().fmt(f),
+        }
+    }
 }
 
 impl From<&str> for Output {
