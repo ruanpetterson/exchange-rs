@@ -2,7 +2,6 @@ mod index;
 
 use std::collections::btree_map::Entry;
 use std::collections::VecDeque;
-use std::marker::PhantomData;
 
 use exchange_core::Asset;
 use exchange_core::Exchange;
@@ -10,7 +9,6 @@ use exchange_core::ExchangeExt;
 use exchange_types::LimitOrder;
 use exchange_types::Order;
 use exchange_types::OrderSide;
-use exchange_types::Trade;
 use num::Zero;
 
 use crate::orderbook::index::OrdersById;
@@ -20,7 +18,6 @@ use crate::MatchingAlgo;
 pub struct Orderbook {
     orders_by_id: OrdersById<LimitOrder>,
     orders_by_side: OrdersBySide<LimitOrder>,
-    _trade: PhantomData<Trade>,
 }
 
 impl Orderbook {
@@ -36,7 +33,6 @@ impl Default for Orderbook {
         Self {
             orders_by_id: Default::default(),
             orders_by_side: Default::default(),
-            _trade: PhantomData,
         }
     }
 }
