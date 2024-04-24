@@ -9,7 +9,6 @@ use exchange_core::Trade;
 use crate::error::ConversionError;
 use crate::error::OrderError;
 use crate::error::PriceError;
-use crate::error::SideError;
 use crate::error::StatusError;
 use crate::error::TradeError;
 use crate::Amount;
@@ -214,7 +213,7 @@ impl Trade<Order> for LimitOrder {
             (OrderSide::Bid, OrderSide::Ask) => {
                 (maker_limit_price, taker_limit_price)
             }
-            _ => return Err(SideError::Conflict)?,
+            _ => return Err(TradeError::SameSide)?,
         };
 
         (bid_price >= ask_price)
@@ -244,7 +243,7 @@ impl From<LimitOrder> for Order {
 }
 
 impl TryFrom<Order> for LimitOrder {
-    type Error = OrderError;
+    type Error = ConversionError;
 
     fn try_from(order: Order) -> Result<Self, Self::Error> {
         let OrderType::Limit {

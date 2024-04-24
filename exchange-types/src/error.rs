@@ -29,28 +29,22 @@ impl From<StatusError> for OrderError {
 pub enum TradeError {
     #[error(transparent)]
     Price(#[from] PriceError),
-    #[error(transparent)]
-    Side(#[from] SideError),
+    #[error("incompatible side")]
+    SameSide,
     #[error(transparent)]
     Status(#[from] StatusError),
 }
 
 #[derive(Debug, Error)]
 pub enum PriceError {
-    #[error("prices do not match each other")]
+    #[error("incompatible price")]
     Incompatible,
-    #[error("limit price is a must")]
+    #[error("limit price not found")]
     NotFound,
 }
 
 #[derive(Debug, Error)]
-pub enum SideError {
-    #[error("taker and maker must be at opposite sides")]
-    Conflict,
-}
-
-#[derive(Debug, Error)]
 pub enum StatusError {
-    #[error("taker and maker cannot be closed")]
+    #[error("order closed")]
     Closed,
 }
