@@ -23,7 +23,7 @@ where
     >,
 {
     #[inline]
-    fn enforce(incoming_order: &mut O, exchange: &E) {
+    fn enforce(&self, incoming_order: &mut O, exchange: &E) {
         if incoming_order.is_fill_or_kill()
             && !FillOrKill::can_fill(incoming_order, exchange)
         {

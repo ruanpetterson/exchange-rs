@@ -35,7 +35,7 @@ impl<O> Algo<O> for MatchingAlgo {
     {
         policy::before_policies()
             .iter()
-            .for_each(|policy| policy(&mut incoming_order, exchange));
+            .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
 
         while !incoming_order.is_closed() {
             let Some(mut top_order) =
@@ -67,7 +67,7 @@ impl<O> Algo<O> for MatchingAlgo {
 
         policy::late_policies()
             .iter()
-            .for_each(|policy| policy(&mut incoming_order, exchange));
+            .for_each(|policy| policy.enforce(&mut incoming_order, exchange));
 
         // If incoming order is not full-filled and open, it must be inserted
         // into the orderbook.

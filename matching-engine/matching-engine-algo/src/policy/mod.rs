@@ -2,12 +2,12 @@ mod fill_or_kill;
 mod immediate_or_cancel;
 mod post_only;
 mod seq {
-    pub(super) trait Seq {}
+    pub(in crate::policy) trait Seq {}
 
-    pub(super) enum Before {}
+    pub(crate) enum Before {}
     impl Seq for Before {}
 
-    pub(super) enum Late {}
+    pub(crate) enum Late {}
     impl Seq for Late {}
 }
 
@@ -34,12 +34,13 @@ where
         OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
     >,
 {
-    fn enforce(order: &mut O, exchange: &E);
+    fn enforce(&self, order: &mut O, exchange: &E);
 }
 
 /// Policies that should be run before matching.
 #[inline]
-pub(super) const fn before_policies<'e, O, E>() -> &'e [fn(&mut O, &E)]
+pub(super) fn before_policies<'e, O, E>(
+) -> &'e [&'e dyn Policy<O, E, seq::Before>]
 where
     E: Exchange + ExchangeExt + 'e,
     <E as Exchange>::Order: Trade<O>,
@@ -51,15 +52,16 @@ where
         OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
     >,
 {
-    &[
-        <FillOrKill as Policy<O, E, _>>::enforce,
-        <PostOnly as Policy<O, E, _>>::enforce,
-    ]
+    const FILL_OR_KILL: &FillOrKill = &FillOrKill;
+    const POST_ONLY: &PostOnly = &PostOnly;
+
+    &[FILL_OR_KILL, POST_ONLY]
 }
 
 /// Policies that should be run after matching.
 #[inline]
-pub(super) const fn late_policies<'e, O, E>() -> &'e [fn(&mut O, &E)]
+pub(super) const fn late_policies<'e, O, E>(
+) -> &'e [&'e dyn Policy<O, E, seq::Late>]
 where
     E: Exchange + ExchangeExt + 'e,
     <E as Exchange>::Order: Trade<O>,
@@ -71,5 +73,7 @@ where
         OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
     >,
 {
-    &[<ImmediateOrCancel as Policy<O, E, _>>::enforce]
+    const IMMEDIATE_OR_CANCEL: &ImmediateOrCancel = &ImmediateOrCancel;
+
+    &[IMMEDIATE_OR_CANCEL]
 }
