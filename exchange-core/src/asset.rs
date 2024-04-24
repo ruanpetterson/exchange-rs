@@ -35,6 +35,8 @@ pub trait Asset: PartialOrd {
     fn status(&self) -> Self::OrderStatus;
     /// Returns `true` if order is fill or kill.
     fn is_fill_or_kill(&self) -> bool;
+    /// Returns `true` if order is open.
+    fn is_open(&self) -> bool;
     /// Returns `true` if order is closed.
     fn is_closed(&self) -> bool;
     /// Returns `true` if order is immediate or cancel.

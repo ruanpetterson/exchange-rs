@@ -4,8 +4,6 @@ use thiserror::Error;
 pub enum ConversionError {
     #[error("unable to convert a non-limit order into limit")]
     Incompatible,
-    #[error(transparent)]
-    Status(#[from] StatusError),
 }
 
 #[derive(Debug, Error)]
@@ -16,13 +14,6 @@ pub enum OrderError {
     NoFill,
     #[error("filling amount exceeds remaining amount")]
     Overfill,
-}
-
-impl From<StatusError> for OrderError {
-    #[inline]
-    fn from(error: StatusError) -> Self {
-        ConversionError::from(error).into()
-    }
 }
 
 #[derive(Debug, Error)]

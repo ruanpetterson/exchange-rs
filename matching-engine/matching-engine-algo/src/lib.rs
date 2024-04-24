@@ -71,14 +71,17 @@ impl<O> Algo<O> for MatchingAlgo {
 
         // If incoming order is not full-filled and open, it must be inserted
         // into the orderbook.
-        if let Ok(order) = incoming_order.try_into() {
-            // SAFETY: This call is safe because we ensure that the
-            // 'incoming_order' will enter the order book if, and only if, all
-            // orders on the opposite side that match with it have already been
-            // executed. This is explicit at `Order::trade(&mut incoming_trade,
-            // &mut top_order)` returning `Err`.
-            unsafe {
-                exchange.insert(order);
+        if incoming_order.is_open() {
+            if let Ok(order) = incoming_order.try_into() {
+                // SAFETY: This call is safe because we ensure that the
+                // 'incoming_order' will enter the order book if, and only if,
+                // all orders on the opposite side that match with it have
+                // already been executed. This is explicit at
+                // `Order::trade(&mut incoming_trade, &mut top_order)` returning
+                // `Err`.
+                unsafe {
+                    exchange.insert(order);
+                }
             }
         }
 

@@ -198,6 +198,11 @@ impl Asset for Order {
     }
 
     #[inline]
+    fn is_open(&self) -> bool {
+        !self.is_closed()
+    }
+
+    #[inline]
     fn is_closed(&self) -> bool {
         matches!(
             self.status(),

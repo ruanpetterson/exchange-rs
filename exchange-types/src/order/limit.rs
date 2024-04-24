@@ -149,6 +149,11 @@ impl Asset for LimitOrder {
     }
 
     #[inline]
+    fn is_open(&self) -> bool {
+        !self.is_closed()
+    }
+
+    #[inline]
     fn is_closed(&self) -> bool {
         matches!(
             self.status(),
@@ -255,10 +260,6 @@ impl TryFrom<Order> for LimitOrder {
         else {
             return Err(ConversionError::Incompatible)?;
         };
-
-        if order.is_closed() {
-            return Err(StatusError::Closed)?;
-        }
 
         Ok(LimitOrder {
             id: order.id,
