@@ -4,6 +4,7 @@ use exchange_core::Trade as _;
 use crate::error::TradeError;
 use crate::Amount;
 use crate::LimitOrder;
+use crate::Notional;
 use crate::Order;
 use crate::OrderId;
 use crate::Price;
@@ -14,8 +15,12 @@ use crate::Price;
 pub struct Trade {
     pub(crate) taker: OrderId,
     pub(crate) maker: OrderId,
+    /// Amount exchanged.
     pub(crate) amount: Amount,
+    /// Traded price.
     pub(crate) price: Price,
+    /// Total value of the underlying trade.
+    pub(crate) notional: Notional,
 }
 
 impl Trade {
@@ -39,12 +44,25 @@ impl Trade {
             maker: maker.id(),
             amount: exchanged,
             price,
+            notional: exchanged * price,
         })
+    }
+
+    /// Returns the amount exchanged.
+    #[inline]
+    pub const fn amount(&self) -> Amount {
+        self.amount
     }
 
     /// Returns the traded price.
     #[inline]
-    pub fn price(&self) -> Price {
+    pub const fn price(&self) -> Price {
         self.price
+    }
+
+    /// Returns the total value of the underlying trade.
+    #[inline]
+    pub const fn notional(&self) -> Notional {
+        self.notional
     }
 }

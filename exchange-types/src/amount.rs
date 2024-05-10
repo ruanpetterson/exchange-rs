@@ -1,8 +1,8 @@
 use std::fmt;
 use std::ops::Add;
 use std::ops::AddAssign;
-use std::ops::Deref;
-use std::ops::DerefMut;
+use std::ops::Div;
+use std::ops::Mul;
 use std::ops::Sub;
 use std::ops::SubAssign;
 
@@ -79,6 +79,14 @@ macro_rules! amount {
         pub struct $t(::rust_decimal::Decimal);
 
         #[automatically_derived]
+        impl $t {
+            #[inline]
+            pub fn is_zero(&self) -> bool {
+                <$t as ::num::Zero>::is_zero(self)
+            }
+        }
+
+        #[automatically_derived]
         impl<T> From<T> for $t
         where
             ::rust_decimal::Decimal: From<T>,
@@ -107,29 +115,13 @@ macro_rules! amount {
         }
 
         #[automatically_derived]
-        impl Deref for $t {
-            type Target = ::rust_decimal::Decimal;
-
-            #[inline]
-            fn deref(&self) -> &Self::Target {
-                &self.0
-            }
-        }
-
-        #[automatically_derived]
-        impl DerefMut for $t {
-            #[inline]
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.0
-            }
-        }
-
-        #[automatically_derived]
         impl ::num::Zero for $t {
+            #[inline]
             fn zero() -> Self {
                 Self(<::rust_decimal::Decimal as ::num::Zero>::zero())
             }
 
+            #[inline]
             fn is_zero(&self) -> bool {
                 <::rust_decimal::Decimal as ::num::Zero>::is_zero(&self.0)
             }
@@ -142,4 +134,24 @@ macro_rules! amount {
     )*)
 }
 
-amount! { Amount Price }
+amount! { Amount Notional Price }
+
+impl Mul<Price> for Amount {
+    type Output = Notional;
+
+    #[inline]
+    fn mul(self, price: Price) -> Self::Output {
+        let amount = self;
+        Notional(amount.0 * price.0)
+    }
+}
+
+impl Div<Price> for Notional {
+    type Output = Amount;
+
+    #[inline]
+    fn div(self, price: Price) -> Self::Output {
+        let notional = self;
+        Amount(notional.0 / price.0)
+    }
+}
