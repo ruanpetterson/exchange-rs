@@ -6,6 +6,7 @@ members = ["exchange-core", "exchange-types", "matching-engine/*"]
 [workspace.dependencies]
 anyhow = "1.0"
 arrayvec = "0.7"
+assert2 = "0.3.14"
 clap = "4.5"
 compact_str = "0.7"
 criterion = "0.5"
