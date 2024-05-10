@@ -79,9 +79,13 @@ macro_rules! amount {
         pub struct $t(::rust_decimal::Decimal);
 
         #[automatically_derived]
-        impl From<::rust_decimal::Decimal> for $t {
+        impl<T> From<T> for $t
+        where
+            ::rust_decimal::Decimal: From<T>,
+        {
             #[inline]
-            fn from(decimal: ::rust_decimal::Decimal) -> $t {
+            fn from(decimal: T) -> $t {
+                let decimal = ::rust_decimal::Decimal::from(decimal);
                 Self(decimal)
             }
         }
