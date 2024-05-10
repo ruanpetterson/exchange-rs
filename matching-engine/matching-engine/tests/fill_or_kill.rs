@@ -26,6 +26,19 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .market(100)
@@ -34,7 +47,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -55,6 +73,24 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 200,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .market(200)
@@ -63,7 +99,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -91,6 +132,29 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [
+                    Order {
+                        limit_price: 300,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 200,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
                 .market(300)
@@ -99,7 +163,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
     }
 
@@ -117,6 +186,19 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 90,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .limit(100, 100)
@@ -126,7 +208,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -147,6 +234,24 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 80,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 90,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .limit(100, 200)
@@ -156,7 +261,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -184,6 +294,29 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [
+                    Order {
+                        limit_price: 120,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 110,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
                 .limit(90, 300)
@@ -193,7 +326,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
     }
 
@@ -211,6 +349,19 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .limit(100, 100)
@@ -220,7 +371,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -241,6 +397,24 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+                Bid: [],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Bid)
                 .limit(100, 200)
@@ -250,7 +424,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
 
         #[test]
@@ -278,6 +457,29 @@ mod valid {
                 assert!(exchange.matching(limit_order).is_ok());
             });
 
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                    Order {
+                        limit_price: 100,
+                        remaining: 100,
+                        status: Open,
+                    },
+                ],
+            }
+            "###);
+
             let fill_or_kill = Order::builder()
                 .side(OrderSide::Ask)
                 .limit(100, 300)
@@ -287,7 +489,12 @@ mod valid {
 
             assert!(exchange.matching(fill_or_kill).is_ok());
 
-            insta::assert_debug_snapshot!(&exchange);
+            insta::assert_debug_snapshot!(&exchange, @r###"
+            {
+                Ask: [],
+                Bid: [],
+            }
+            "###);
         }
     }
 }
@@ -298,13 +505,24 @@ mod invalid {
     #[test]
     fn amount_mismatch() {
         let mut exchange = Orderbook::new().tap_mut(|exchange| {
-            let limit_order = Order::builder()
-                .side(OrderSide::Ask)
-                .limit(100, 50)
-                .build();
+            let limit_order =
+                Order::builder().side(OrderSide::Ask).limit(100, 50).build();
 
             assert!(exchange.matching(limit_order).is_ok());
         });
+
+        insta::assert_debug_snapshot!(&exchange, @r###"
+        {
+            Ask: [
+                Order {
+                    limit_price: 100,
+                    remaining: 50,
+                    status: Open,
+                },
+            ],
+            Bid: [],
+        }
+        "###);
 
         let fill_or_kill = Order::builder()
             .side(OrderSide::Bid)
@@ -315,26 +533,51 @@ mod invalid {
 
         assert!(exchange.matching(fill_or_kill).is_ok());
 
-        insta::assert_debug_snapshot!(&exchange);
+        insta::assert_debug_snapshot!(&exchange, @r###"
+        {
+            Ask: [
+                Order {
+                    limit_price: 100,
+                    remaining: 50,
+                    status: Open,
+                },
+            ],
+            Bid: [],
+        }
+        "###);
     }
 
     #[test]
     fn price_mismatch() {
         let mut exchange = Orderbook::new().tap_mut(|exchange| {
-            let limit_order = Order::builder()
-                .side(OrderSide::Bid)
-                .limit(50, 50)
-                .build();
+            let limit_order =
+                Order::builder().side(OrderSide::Bid).limit(50, 50).build();
 
             assert!(exchange.matching(limit_order).is_ok());
 
-            let limit_order = Order::builder()
-                .side(OrderSide::Bid)
-                .limit(100, 50)
-                .build();
+            let limit_order =
+                Order::builder().side(OrderSide::Bid).limit(100, 50).build();
 
             assert!(exchange.matching(limit_order).is_ok());
         });
+
+        insta::assert_debug_snapshot!(&exchange, @r###"
+        {
+            Ask: [],
+            Bid: [
+                Order {
+                    limit_price: 100,
+                    remaining: 50,
+                    status: Open,
+                },
+                Order {
+                    limit_price: 50,
+                    remaining: 50,
+                    status: Open,
+                },
+            ],
+        }
+        "###);
 
         let fill_or_kill = Order::builder()
             .side(OrderSide::Ask)
@@ -345,6 +588,22 @@ mod invalid {
 
         assert!(exchange.matching(fill_or_kill).is_ok());
 
-        insta::assert_debug_snapshot!(&exchange);
+        insta::assert_debug_snapshot!(&exchange, @r###"
+        {
+            Ask: [],
+            Bid: [
+                Order {
+                    limit_price: 100,
+                    remaining: 50,
+                    status: Open,
+                },
+                Order {
+                    limit_price: 50,
+                    remaining: 50,
+                    status: Open,
+                },
+            ],
+        }
+        "###);
     }
 }

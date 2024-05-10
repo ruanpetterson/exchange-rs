@@ -1,8 +1,0 @@
----
-source: exchange/tests/fill_or_kill.rs
-expression: "&exchange"
----
-{
-    Ask: [],
-    Bid: [],
-}
