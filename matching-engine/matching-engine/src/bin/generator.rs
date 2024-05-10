@@ -3,6 +3,7 @@ use std::io::BufWriter;
 use std::io::Result;
 use std::io::Write;
 use std::mem;
+use std::sync::OnceLock;
 use std::thread;
 
 use arrayvec::ArrayVec;
@@ -11,6 +12,8 @@ use compact_str::CompactString;
 use crossbeam::channel::Sender;
 use exchange_types::OrderRequest;
 use exchange_types::OrderSide;
+use rand::distributions::Bernoulli;
+use rand::distributions::Distribution;
 use rand::Rng;
 use rust_decimal::Decimal;
 use uuid::Uuid;
@@ -26,17 +29,20 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    let Args { total, workers } = Args::parse();
+    let Args {
+        total: jobs,
+        workers,
+    } = Args::parse();
 
     let (tx, rx) = crossbeam::channel::bounded::<Message>(1024 * 4);
 
-    let order_generator_workers = 1.max(workers - 1);
-    for jobs in fair_division(total, order_generator_workers) {
+    let workers = 1.max(workers - 1);
+    for jobs_per_worker in fair_division(jobs, workers) {
         let tx = tx.clone();
         thread::spawn(move || {
             let mut rng = rand::thread_rng();
             let mut buf = BufWriter::new(ArrayVec::new_const());
-            for _ in 0..jobs {
+            for _ in 0..jobs_per_worker {
                 worker(&mut buf, &tx, &mut rng);
             }
         });
@@ -58,12 +64,22 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+thread_local! {
+    static SIDE_DISTRIBUTION: OnceLock<Bernoulli> = const { OnceLock::new() };
+}
+
 #[inline(always)]
 fn worker(
     buf: &mut BufWriter<Message>,
     tx: &Sender<Message>,
     rng: &mut rand::rngs::ThreadRng,
 ) {
+    let side_distribution = SIDE_DISTRIBUTION.with(|side_dist| {
+        *side_dist.get_or_init(move || unsafe {
+            Bernoulli::from_ratio(1, 2).unwrap_unchecked()
+        })
+    });
+
     let order = match rng.gen_range(0..1_000) {
         0 => OrderRequest::Delete {
             order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
@@ -74,9 +90,9 @@ fn worker(
             order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
             pair: CompactString::new_inline("BTC/USDC"),
             limit_price: Decimal::from(rng.gen_range(100..10_000)).into(),
-            side: match rng.gen_range(0..2) {
-                0 => OrderSide::Ask,
-                _ => OrderSide::Bid,
+            side: match side_distribution.sample(rng) {
+                true => OrderSide::Ask,
+                false => OrderSide::Bid,
             },
         },
     };
