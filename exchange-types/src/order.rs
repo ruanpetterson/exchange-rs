@@ -3,18 +3,23 @@ use std::cmp::Ordering;
 use std::cmp::Reverse;
 use std::ops::AddAssign;
 
+use either::Either;
 use exchange_core::Asset;
 use rust_decimal::Decimal;
 
 use crate::error::OrderError;
 use crate::error::TradeError;
+use crate::order_type::ByBase;
+use crate::order_type::ByFunds;
+use crate::order_type::PricedBy;
 use crate::order_type::TimeInForce;
-use crate::Amount;
+use crate::Notional;
 use crate::OrderId;
 use crate::OrderSide;
 use crate::OrderStatus;
 use crate::OrderType;
 use crate::Price;
+use crate::Quantity;
 use crate::Trade;
 
 mod limit;
@@ -53,7 +58,7 @@ impl Order {
         id: OrderId,
         side: OrderSide,
         limit_price: impl Into<Price>,
-        amount: impl Into<Amount>,
+        quantity: impl Into<Quantity>,
     ) -> Self {
         Self {
             id,
@@ -61,8 +66,10 @@ impl Order {
             type_: OrderType::Limit {
                 limit_price: limit_price.into(),
                 time_in_force: Default::default(),
-                amount: amount.into(),
-                filled: Decimal::ZERO.into(),
+                priced_by: ByBase {
+                    quantity: quantity.into(),
+                    filled: Decimal::ZERO.into(),
+                },
             },
             status: OrderStatus::Open,
         }
@@ -74,8 +81,8 @@ impl Order {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
-    pub(crate) fn fill(&mut self, amount: Amount) {
-        self.try_fill(amount)
+    pub(crate) fn fill(&mut self, quantity: Quantity, price: Price) {
+        self.try_fill(quantity, price)
             .expect("order does not have available amount to fill")
     }
 
@@ -86,15 +93,30 @@ impl Order {
     /// This results in an unreliable state when current `Order::filled`
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
-    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Amount) {
-        let filled = match self.type_ {
-            OrderType::Limit { ref mut filled, .. }
-            | OrderType::Market { ref mut filled, .. } => filled,
+    pub(crate) unsafe fn fill_unchecked(
+        &mut self,
+        quantity: Quantity,
+        price: Price,
+    ) {
+        match self.type_ {
+            OrderType::Limit {
+                priced_by: ByBase { ref mut filled, .. },
+                ..
+            }
+            | OrderType::Market {
+                priced_by: PricedBy::Base(ByBase { ref mut filled, .. }),
+                ..
+            } => filled.add_assign(quantity),
+            OrderType::Market {
+                priced_by: PricedBy::Funds(ByFunds { ref mut filled, .. }),
+                ..
+            } => filled.add_assign(quantity * price),
         };
 
-        filled.add_assign(amount);
-
-        self.status = if self.remaining().is_zero() {
+        self.status = if match self.remaining() {
+            Either::Left(notional) => notional.is_zero(),
+            Either::Right(quantity) => quantity.is_zero(),
+        } {
             OrderStatus::Completed
         } else {
             OrderStatus::Partial
@@ -106,18 +128,28 @@ impl Order {
     #[inline]
     pub(crate) fn try_fill(
         &mut self,
-        amount: Amount,
+        quantity: Quantity,
+        price: Price,
     ) -> Result<(), OrderError> {
-        if amount.is_zero() {
+        if quantity.is_zero() {
             return Err(OrderError::NoFill);
         }
 
-        if amount > self.remaining() {
-            return Err(OrderError::Overfill);
+        match self.remaining() {
+            Either::Left(notional) => {
+                if quantity * price > notional {
+                    return Err(OrderError::Overfill);
+                }
+            }
+            Either::Right(remaining) => {
+                if quantity > remaining {
+                    return Err(OrderError::Overfill);
+                }
+            }
         }
 
-        // SAFETY: we already guarantee that `remaining >= amount > 0`.
-        unsafe { self.fill_unchecked(amount) };
+        // SAFETY: we already guarantee that `remaining >= quantity > 0`.
+        unsafe { self.fill_unchecked(quantity, price) };
 
         Ok(())
     }
@@ -146,9 +178,10 @@ impl PartialOrd for Order {
 }
 
 impl Asset for Order {
-    type OrderAmount = Amount;
     type OrderId = OrderId;
+    type OrderNotional = Notional;
     type OrderPrice = Price;
+    type OrderQuantity = Quantity;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = Trade;
@@ -173,10 +206,20 @@ impl Asset for Order {
     }
 
     #[inline]
-    fn remaining(&self) -> Self::OrderAmount {
+    fn remaining(&self) -> Either<Self::OrderNotional, Self::OrderQuantity> {
         match self.type_ {
-            OrderType::Limit { amount, filled, .. }
-            | OrderType::Market { amount, filled, .. } => amount - filled,
+            OrderType::Limit {
+                priced_by: ByBase { quantity, filled },
+                ..
+            }
+            | OrderType::Market {
+                priced_by: PricedBy::Base(ByBase { quantity, filled }),
+                ..
+            } => Either::Right(quantity - filled),
+            OrderType::Market {
+                priced_by: PricedBy::Funds(ByFunds { funds, filled }),
+                ..
+            } => Either::Left(funds - filled),
         }
     }
 
@@ -245,6 +288,7 @@ mod builder {
     use std::mem::MaybeUninit;
 
     use super::*;
+    use crate::order_type::PricedBy;
 
     enum Uninhabited {}
 
@@ -295,13 +339,15 @@ mod builder {
         pub fn limit(
             &self,
             limit_price: impl Into<Price>,
-            amount: impl Into<Amount>,
+            quantity: impl Into<Quantity>,
         ) -> Builder<OrderSide, Limit<GoodTillCancel>> {
             let type_ = OrderType::Limit {
                 limit_price: limit_price.into(),
                 time_in_force: TimeInForce::GoodTillCancel { post_only: false },
-                amount: amount.into(),
-                filled: Decimal::ZERO.into(),
+                priced_by: ByBase {
+                    quantity: quantity.into(),
+                    filled: Decimal::ZERO.into(),
+                },
             };
 
             Builder {
@@ -314,12 +360,14 @@ mod builder {
         #[inline]
         pub fn market(
             &self,
-            amount: impl Into<Amount>,
+            quantity: impl Into<Quantity>,
         ) -> Builder<OrderSide, Market> {
             let type_ = OrderType::Market {
                 all_or_none: false,
-                amount: amount.into(),
-                filled: Decimal::ZERO.into(),
+                priced_by: PricedBy::Base(ByBase {
+                    quantity: quantity.into(),
+                    filled: Decimal::ZERO.into(),
+                }),
             };
 
             Builder {
@@ -336,8 +384,7 @@ mod builder {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
-                amount,
-                filled,
+                priced_by,
             } = self.type_()
             else {
                 // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
@@ -348,8 +395,7 @@ mod builder {
             let type_ = OrderType::Limit {
                 limit_price,
                 time_in_force: TimeInForce::GoodTillCancel { post_only: false },
-                amount,
-                filled,
+                priced_by,
             };
 
             Builder {
@@ -366,8 +412,7 @@ mod builder {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
-                amount,
-                filled,
+                priced_by,
             } = self.type_()
             else {
                 // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
@@ -380,8 +425,7 @@ mod builder {
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: false,
                 },
-                amount,
-                filled,
+                priced_by,
             };
 
             Builder {
@@ -400,8 +444,7 @@ mod builder {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
-                amount,
-                filled,
+                priced_by,
             } = self.type_()
             else {
                 // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
@@ -412,8 +455,7 @@ mod builder {
             let type_ = OrderType::Limit {
                 limit_price,
                 time_in_force: TimeInForce::GoodTillCancel { post_only: true },
-                amount,
-                filled,
+                priced_by,
             };
 
             Builder {
@@ -432,8 +474,7 @@ mod builder {
             let OrderType::Limit {
                 limit_price,
                 time_in_force: _,
-                amount,
-                filled,
+                priced_by,
             } = self.type_()
             else {
                 // SAFETY: since this is a `Builder<_, Limit<_>>`, this will
@@ -446,8 +487,7 @@ mod builder {
                 time_in_force: TimeInForce::ImmediateOrCancel {
                     all_or_none: true,
                 },
-                amount,
-                filled,
+                priced_by,
             };
 
             Builder {
@@ -463,8 +503,7 @@ mod builder {
         pub const fn all_or_none(&self) -> Builder<OrderSide, Market> {
             let OrderType::Market {
                 all_or_none: _,
-                amount,
-                filled,
+                priced_by,
             } = self.type_()
             else {
                 // SAFETY: since this is a `Builder<_, Market<_>>`, this will
@@ -474,8 +513,7 @@ mod builder {
 
             let type_ = OrderType::Market {
                 all_or_none: true,
-                amount,
-                filled,
+                priced_by,
             };
 
             Builder {

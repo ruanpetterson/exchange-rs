@@ -28,14 +28,14 @@ fn simple_match() {
             ".maker" => "[uuid]",
         },
         @r###"
-        Trade(
-          taker: "[uuid]",
-          maker: "[uuid]",
-          amount: "100",
-          price: "50000",
-          notional: "5000000",
-        )
-        "###
+    Trade(
+      taker: "[uuid]",
+      maker: "[uuid]",
+      quantity: "100",
+      price: "50000",
+      notional: "5000000",
+    )
+    "###
     }
 }
 
@@ -55,14 +55,14 @@ fn partial_match() {
             ".maker" => "[uuid]",
         },
         @r###"
-        Trade(
-          taker: "[uuid]",
-          maker: "[uuid]",
-          amount: "100",
-          price: "50000",
-          notional: "5000000",
-        )
-        "###
+    Trade(
+      taker: "[uuid]",
+      maker: "[uuid]",
+      quantity: "100",
+      price: "50000",
+      notional: "5000000",
+    )
+    "###
     }
 }
 
@@ -81,14 +81,14 @@ fn taker_advantage_for_ask() {
             ".maker" => "[uuid]",
         },
         @r###"
-        Trade(
-          taker: "[uuid]",
-          maker: "[uuid]",
-          amount: "100",
-          price: "50000",
-          notional: "5000000",
-        )
-        "###
+    Trade(
+      taker: "[uuid]",
+      maker: "[uuid]",
+      quantity: "100",
+      price: "50000",
+      notional: "5000000",
+    )
+    "###
     }
 }
 
@@ -107,14 +107,14 @@ fn taker_advantage_for_bid() {
             ".maker" => "[uuid]",
         },
         @r###"
-        Trade(
-          taker: "[uuid]",
-          maker: "[uuid]",
-          amount: "100",
-          price: "60000",
-          notional: "6000000",
-        )
-        "###
+    Trade(
+      taker: "[uuid]",
+      maker: "[uuid]",
+      quantity: "100",
+      price: "60000",
+      notional: "6000000",
+    )
+    "###
     }
 }
 

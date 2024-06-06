@@ -4,7 +4,7 @@
         "account_id": "d2dcc285-2dad-4586-bec3-2dd1ef56cb7c",
         "side": "ASK",
         "status": "OPEN",
-        "amount": 100,
+        "quantity": 100,
         "type": "LIMIT",
         "limit_price": 50000
     },
@@ -13,7 +13,7 @@
         "account_id": "ffbd4366-ad19-4551-bdac-55ca71c4c2b3",
         "side": "BID",
         "status": "OPEN",
-        "amount": 100,
+        "quantity": 100,
         "type": "LIMIT",
         "limit_price": 60000
     },
@@ -22,7 +22,7 @@
         "account_id": "d2dcc285-2dad-4586-bec3-2dd1ef56cb7c",
         "side": "BID",
         "status": "OPEN",
-        "amount": 100,
+        "quantity": 100,
         "type": "LIMIT",
         "limit_price": 60000
     },
@@ -31,7 +31,7 @@
         "account_id": "ffbd4366-ad19-4551-bdac-55ca71c4c2b3",
         "side": "ASK",
         "status": "OPEN",
-        "amount": 200,
+        "quantity": 200,
         "type": "LIMIT",
         "limit_price": 50000
     },
@@ -40,7 +40,7 @@
         "account_id": "3ce61c03-7de0-4837-9912-42dba23d7613",
         "side": "ASK",
         "status": "OPEN",
-        "amount": 100,
+        "quantity": 100,
         "type": "LIMIT",
         "limit_price": 50000
     },
@@ -49,7 +49,7 @@
         "account_id": "d2dcc285-2dad-4586-bec3-2dd1ef56cb7c",
         "side": "BID",
         "status": "OPEN",
-        "amount": 200,
+        "quantity": 200,
         "type": "LIMIT",
         "limit_price": 60000
     }

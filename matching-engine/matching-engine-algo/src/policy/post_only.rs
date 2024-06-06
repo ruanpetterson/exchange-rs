@@ -12,9 +12,10 @@ where
     E: Exchange,
     <E as Exchange>::Order: Trade<O>,
     O: Asset<
-        OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
         OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+        OrderNotional = <<E as Exchange>::Order as Asset>::OrderNotional,
         OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+        OrderQuantity = <<E as Exchange>::Order as Asset>::OrderQuantity,
         OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
         OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
     >,

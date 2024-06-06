@@ -1,5 +1,6 @@
 use std::ops::ControlFlow;
 
+use either::Either;
 use exchange_core::Asset;
 use exchange_core::Exchange;
 use exchange_core::Opposite;
@@ -15,9 +16,10 @@ where
     E: Exchange,
     <E as Exchange>::Order: Trade<O>,
     O: Asset<
-        OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
         OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+        OrderNotional = <<E as Exchange>::Order as Asset>::OrderNotional,
         OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+        OrderQuantity = <<E as Exchange>::Order as Asset>::OrderQuantity,
         OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
         OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
     >,
@@ -53,38 +55,82 @@ impl FillOrKill {
         E: Exchange,
         <E as Exchange>::Order: Trade<O>,
         O: Asset<
-            OrderAmount = <<E as Exchange>::Order as Asset>::OrderAmount,
             OrderId = <<E as Exchange>::Order as Asset>::OrderId,
+            OrderNotional = <<E as Exchange>::Order as Asset>::OrderNotional,
             OrderPrice = <<E as Exchange>::Order as Asset>::OrderPrice,
+            OrderQuantity = <<E as Exchange>::Order as Asset>::OrderQuantity,
             OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
             OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
         >,
     {
-        exchange
+        let mut iter = exchange
             .iter(&incoming_order.side().opposite())
             .take_while(|order| {
                 // Gather only the orders that are compatible to the
                 // `incoming_order`.
                 order.matches(incoming_order).is_ok()
             })
-            .map(|order| order.remaining())
-            .try_fold(
-                incoming_order.remaining(),
-                |mut remaining, available_to_trade| {
-                    remaining = remaining - available_to_trade.min(remaining);
+            .map(|order| {
+                let Either::Right(remaining) = order.remaining() else {
+                    unreachable!();
+                };
 
-                    // This means that the `incoming_order` can be fully
-                    // filled.
-                    if remaining.is_zero() {
-                        // Using `ControlFlow` make this call short-circuiting;
-                        // in other words, it will stop processing as soon as
-                        // the closure returns `ControlFlow::Break`.
-                        return ControlFlow::Break(remaining);
-                    }
+                (
+                    order
+                        .limit_price()
+                        .expect("maker orders always have a limit price"),
+                    remaining,
+                )
+            });
 
-                    ControlFlow::Continue(remaining)
-                },
-            )
-            .is_break()
+        match incoming_order.remaining() {
+            Either::Left(remaining) => {
+                iter.try_fold(
+                    remaining,
+                    |mut remaining, (limit_price, available_to_trade)| {
+                        let available_to_trade =
+                            limit_price * available_to_trade;
+
+                        remaining =
+                            remaining - available_to_trade.min(remaining);
+
+                        // This means that the `incoming_order` can be fully
+                        // filled.
+                        if remaining.is_zero() {
+                            // Using `ControlFlow` make this call
+                            // short-circuiting; in other words, it will stop
+                            // processing as soon as the closure returns
+                            // `ControlFlow::Break`.
+                            return ControlFlow::Break(remaining);
+                        }
+
+                        ControlFlow::Continue(remaining)
+                    },
+                )
+                .is_break()
+            }
+            Either::Right(remaining) => {
+                iter.try_fold(
+                    remaining,
+                    |mut remaining, (_limit_price, available_to_trade)| {
+                        remaining =
+                            remaining - available_to_trade.min(remaining);
+
+                        // This means that the `incoming_order` can be fully
+                        // filled.
+                        if remaining.is_zero() {
+                            // Using `ControlFlow` make this call
+                            // short-circuiting; in other words, it will stop
+                            // processing as soon as the closure returns
+                            // `ControlFlow::Break`.
+                            return ControlFlow::Break(remaining);
+                        }
+
+                        ControlFlow::Continue(remaining)
+                    },
+                )
+                .is_break()
+            }
+        }
     }
 }

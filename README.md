@@ -48,7 +48,7 @@ Example JSON:
     {
         "type_op": "CREATE",
         "account_id": "d4f79484-fe48-41e9-9bc5-45bb4cfedaf4",
-        "amount": "0.00230",
+        "quantity": "0.00230",
         "order_id": "75637317-8d86-436e-93bc-befc4a4ed830",
         "pair": "BTC/USDC",
         "limit_price": "63500.00",
@@ -57,7 +57,7 @@ Example JSON:
     {
         "type_op": "CREATE",
         "account_id": "e26cd32c-e41e-4131-8dbe-489b5804beb3",
-        "amount": "0.00230",
+        "quantity": "0.00230",
         "order_id": "b69c93dc-d9d0-438c-88f9-6f34f9af53a7",
         "pair": "BTC/USDC",
         "limit_price": "63500.00",

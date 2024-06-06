@@ -7,8 +7,10 @@ use crate::Trade;
 
 pub type Spread<Order> =
     (<Order as Asset>::OrderPrice, <Order as Asset>::OrderPrice);
-pub type Volume<Order> =
-    (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount);
+pub type Volume<Order> = (
+    <Order as Asset>::OrderQuantity,
+    <Order as Asset>::OrderQuantity,
+);
 
 /// An interface for dealing with exchange.
 ///
@@ -85,9 +87,10 @@ pub trait Exchange {
         Self: ExchangeExt + Sized,
         Self::Order: Trade<O> + TryFrom<O>,
         O: Asset<
-            OrderAmount = <<Self as Exchange>::Order as Asset>::OrderAmount,
             OrderId = <<Self as Exchange>::Order as Asset>::OrderId,
+            OrderNotional = <<Self as Exchange>::Order as Asset>::OrderNotional,
             OrderPrice = <<Self as Exchange>::Order as Asset>::OrderPrice,
+            OrderQuantity = <<Self as Exchange>::Order as Asset>::OrderQuantity,
             OrderSide = <<Self as Exchange>::Order as Asset>::OrderSide,
             OrderStatus = <<Self as Exchange>::Order as Asset>::OrderStatus,
         >,
