@@ -5,8 +5,8 @@ edition = "2021"
 default-run = "matching-engine"
 
 [dependencies]
-exchange-core = { path = "../../exchange-core" }
-exchange-types = { path = "../../exchange-types" }
+exchange-core = { path = "../../exchange-core", features = ["serde"] }
+exchange-types = { path = "../../exchange-types", features = ["serde"] }
 
 matching-engine-algo = { path = "../matching-engine-algo" }
 matching-engine-rt = { path = "../matching-engine-rt" }
@@ -24,7 +24,7 @@ rust_decimal = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-uuid = { workspace = true, features = ["rand", "v4"] }
+uuid = { workspace = true, features = ["fast-rng", "v4"] }
 
 [dev-dependencies]
 matching-engine-algo = { path = "../matching-engine-algo", features = ["test"] }
@@ -38,7 +38,6 @@ tap = { workspace = true }
 
 [[bin]]
 name = "generator"
-required-features = ["serde"]
 
 # [[bench]]
 # name = "in_memory"

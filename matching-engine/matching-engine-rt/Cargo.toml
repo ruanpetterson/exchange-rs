@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-exchange-core = { path = "../../exchange-core" }
-exchange-types = { path = "../../exchange-types" }
+exchange-core = { path = "../../exchange-core", features = ["serde"] }
+exchange-types = { path = "../../exchange-types", features = ["serde"] }
 matching-engine-algo = { path = "../matching-engine-algo" }
 
 compact_str = { workspace = true, features = ["serde"] }
 rust_decimal = { workspace = true }
-serde = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, optional = true }
 thiserror = { workspace = true }
