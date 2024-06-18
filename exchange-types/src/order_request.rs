@@ -3,12 +3,13 @@ use rust_decimal::Decimal;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::Amount;
+use crate::order_type::ByBase;
 use crate::Order;
 use crate::OrderId;
 use crate::OrderSide;
 use crate::OrderType;
 use crate::Price;
+use crate::Quantity;
 use crate::TimeInForce;
 
 #[derive(Debug, Error)]
@@ -22,7 +23,7 @@ pub enum OrderRequestError {
 pub enum OrderRequest {
     Create {
         account_id: Uuid,
-        amount: Amount,
+        amount: Quantity,
         order_id: Uuid,
         pair: CompactString,
         limit_price: Price,
@@ -51,8 +52,10 @@ impl TryFrom<OrderRequest> for Order {
                 OrderType::Limit {
                     limit_price,
                     time_in_force: TimeInForce::default(),
-                    amount,
-                    filled: Decimal::ZERO.into(),
+                    priced_by: ByBase {
+                        quantity: amount,
+                        filled: Decimal::ZERO.into(),
+                    },
                 },
             )),
             OrderRequest::Delete { .. } => Err(OrderRequestError::MismatchType),

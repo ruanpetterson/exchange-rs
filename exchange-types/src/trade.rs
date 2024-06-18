@@ -1,13 +1,14 @@
+use either::Either;
 use exchange_core::Asset as _;
 use exchange_core::Trade as _;
 
 use crate::error::TradeError;
-use crate::Amount;
 use crate::LimitOrder;
 use crate::Notional;
 use crate::Order;
 use crate::OrderId;
 use crate::Price;
+use crate::Quantity;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(Copy, Clone))]
@@ -16,7 +17,7 @@ pub struct Trade {
     pub(crate) taker: OrderId,
     pub(crate) maker: OrderId,
     /// Amount exchanged.
-    pub(crate) amount: Amount,
+    pub(crate) quantity: Quantity,
     /// Traded price.
     pub(crate) price: Price,
     /// Total value of the underlying trade.
@@ -32,17 +33,22 @@ impl Trade {
     ) -> Result<Trade, TradeError> {
         maker.matches(&*taker)?;
 
-        let exchanged = taker.remaining().min(maker.remaining());
         let price =
             maker.limit_price().expect("maker must always have a price");
 
+        let exchanged = match taker.remaining() {
+            Either::Left(funds) => funds / price,
+            Either::Right(quantity) => quantity,
+        }
+        .min(maker.remaining());
+
         maker.fill(exchanged);
-        taker.fill(exchanged);
+        taker.fill(exchanged, price);
 
         Ok(Trade {
             taker: taker.id(),
             maker: maker.id(),
-            amount: exchanged,
+            quantity: exchanged,
             price,
             notional: exchanged * price,
         })
@@ -50,8 +56,8 @@ impl Trade {
 
     /// Returns the amount exchanged.
     #[inline]
-    pub const fn amount(&self) -> Amount {
-        self.amount
+    pub const fn quantity(&self) -> Quantity {
+        self.quantity
     }
 
     /// Returns the traded price.

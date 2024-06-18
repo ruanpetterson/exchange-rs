@@ -190,16 +190,19 @@ impl ExchangeExt for Orderbook {
     #[inline]
     fn volume(
         &self,
-    ) -> (<Order as Asset>::OrderAmount, <Order as Asset>::OrderAmount) {
+    ) -> (
+        <Order as Asset>::OrderQuantity,
+        <Order as Asset>::OrderQuantity,
+    ) {
         let ask = self
             .iter(&OrderSide::Ask)
-            .map(Asset::remaining)
+            .map(LimitOrder::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);
 
         let bid = self
             .iter(&OrderSide::Bid)
-            .map(Asset::remaining)
+            .map(LimitOrder::remaining)
             .reduce(|acc, curr| acc + curr)
             .unwrap_or_else(Zero::zero);
 

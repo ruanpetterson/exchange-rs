@@ -12,7 +12,7 @@ pub enum OrderError {
     Conversion(#[from] ConversionError),
     #[error("empty filling is not allowed")]
     NoFill,
-    #[error("filling amount exceeds remaining amount")]
+    #[error("filling quantity exceeds available quantity")]
     Overfill,
 }
 

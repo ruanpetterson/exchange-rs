@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use std::cmp::Reverse;
 use std::ops::AddAssign as _;
 
+use either::Either;
 use exchange_core::Asset;
 use exchange_core::Trade;
 
@@ -11,13 +12,15 @@ use crate::error::OrderError;
 use crate::error::PriceError;
 use crate::error::StatusError;
 use crate::error::TradeError;
-use crate::Amount;
+use crate::order_type::ByBase;
+use crate::Notional;
 use crate::Order;
 use crate::OrderId;
 use crate::OrderSide;
 use crate::OrderStatus;
 use crate::OrderType;
 use crate::Price;
+use crate::Quantity;
 use crate::TimeInForce;
 
 #[derive(Clone, Copy, Debug)]
@@ -25,14 +28,14 @@ use crate::TimeInForce;
 pub struct LimitOrder {
     id: OrderId,
     side: OrderSide,
-    limit_price: Price,
+    unit_price: Price,
     /// The post-only flag indicates that the order should only make
     /// liquidity. If any part of the order results in taking liquidity,
     /// the order will be rejected and no part of it will execute.
     post_only: bool,
-    amount: Amount,
+    quantity: Quantity,
     #[cfg_attr(feature = "serde", serde(default))]
-    filled: Amount,
+    filled: Quantity,
     status: OrderStatus,
 }
 
@@ -43,8 +46,8 @@ impl LimitOrder {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
-    pub(crate) fn fill(&mut self, amount: Amount) {
-        self.try_fill(amount)
+    pub(crate) fn fill(&mut self, quantity: Quantity) {
+        self.try_fill(quantity)
             .expect("order does not have available amount to fill")
     }
 
@@ -55,8 +58,8 @@ impl LimitOrder {
     /// This results in an unreliable state when current `Order::filled`
     /// overflows `Order::amount` or given amount is zero.
     #[inline]
-    pub(crate) unsafe fn fill_unchecked(&mut self, amount: Amount) {
-        self.filled.add_assign(amount);
+    pub(crate) unsafe fn fill_unchecked(&mut self, quantity: Quantity) {
+        self.filled.add_assign(quantity);
 
         self.status = if self.remaining().is_zero() {
             OrderStatus::Completed
@@ -70,20 +73,25 @@ impl LimitOrder {
     #[inline]
     pub(crate) fn try_fill(
         &mut self,
-        amount: Amount,
+        quantity: Quantity,
     ) -> Result<(), OrderError> {
-        if amount.is_zero() {
+        if quantity.is_zero() {
             return Err(OrderError::NoFill);
         }
 
-        if amount > self.remaining() {
+        if quantity > self.remaining() {
             return Err(OrderError::Overfill);
         }
 
         // SAFETY: we already guarantee that `remaining >= amount > 0`.
-        unsafe { self.fill_unchecked(amount) };
+        unsafe { self.fill_unchecked(quantity) };
 
         Ok(())
+    }
+
+    #[inline]
+    pub fn remaining(&self) -> Quantity {
+        self.quantity - self.filled
     }
 }
 
@@ -110,9 +118,10 @@ impl PartialOrd for LimitOrder {
 }
 
 impl Asset for LimitOrder {
-    type OrderAmount = Amount;
     type OrderId = OrderId;
+    type OrderNotional = Notional;
     type OrderPrice = Price;
+    type OrderQuantity = Quantity;
     type OrderSide = OrderSide;
     type OrderStatus = OrderStatus;
     type Trade = crate::Trade;
@@ -130,12 +139,13 @@ impl Asset for LimitOrder {
 
     #[inline]
     fn limit_price(&self) -> Option<Self::OrderPrice> {
-        Some(self.limit_price)
+        Some(self.unit_price)
     }
 
     #[inline]
-    fn remaining(&self) -> Self::OrderAmount {
-        self.amount - self.filled
+    fn remaining(&self) -> Either<Self::OrderNotional, Self::OrderQuantity> {
+        let remaining = self.remaining();
+        Either::Right(remaining)
     }
 
     #[inline]
@@ -235,12 +245,14 @@ impl From<LimitOrder> for Order {
             id: order.id,
             side: order.side,
             type_: OrderType::Limit {
-                limit_price: order.limit_price,
+                limit_price: order.unit_price,
                 time_in_force: TimeInForce::GoodTillCancel {
                     post_only: order.post_only,
                 },
-                amount: order.amount,
-                filled: order.filled,
+                priced_by: ByBase {
+                    quantity: order.quantity,
+                    filled: order.filled,
+                },
             },
             status: order.status,
         }
@@ -254,8 +266,7 @@ impl TryFrom<Order> for LimitOrder {
         let OrderType::Limit {
             limit_price,
             time_in_force: TimeInForce::GoodTillCancel { post_only },
-            amount,
-            filled,
+            priced_by,
         } = order.type_
         else {
             return Err(ConversionError::Incompatible)?;
@@ -264,10 +275,10 @@ impl TryFrom<Order> for LimitOrder {
         Ok(LimitOrder {
             id: order.id,
             side: order.side,
-            limit_price,
+            unit_price: limit_price,
             post_only,
-            amount,
-            filled,
+            quantity: priced_by.quantity,
+            filled: priced_by.filled,
             status: order.status,
         })
     }

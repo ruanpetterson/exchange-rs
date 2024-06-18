@@ -14,6 +14,7 @@ test = ["uuid/v4"]
 exchange-core = { path = "../exchange-core" }
 
 compact_str = { workspace = true }
+either = { workspace = true }
 num = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }

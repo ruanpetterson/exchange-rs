@@ -1,5 +1,6 @@
-use crate::Amount;
+use crate::Notional;
 use crate::Price;
+use crate::Quantity;
 
 /// The order type you specify will influence which other order parameters are
 /// required as well as how your order will be executed by the matching engine.
@@ -18,9 +19,8 @@ pub enum OrderType {
         /// [order](Order).
         #[cfg_attr(feature = "serde", serde(default))]
         time_in_force: TimeInForce,
-        amount: Amount,
-        #[cfg_attr(feature = "serde", serde(default))]
-        filled: Amount,
+        #[cfg_attr(feature = "serde", serde(flatten))]
+        priced_by: ByBase,
     },
     /// Market orders differ from limit orders in that they provide no pricing
     /// guarantees. They however do provide a way to buy or sell specific
@@ -33,9 +33,8 @@ pub enum OrderType {
         /// is considered a fill or kill order.
         #[cfg_attr(feature = "serde", serde(default))]
         all_or_none: bool,
-        amount: Amount,
-        #[cfg_attr(feature = "serde", serde(default))]
-        filled: Amount,
+        #[cfg_attr(feature = "serde", serde(flatten))]
+        priced_by: PricedBy,
     },
 }
 
@@ -80,4 +79,29 @@ impl Default for TimeInForce {
     fn default() -> Self {
         Self::GoodTillCancel { post_only: false }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
+#[cfg_attr(feature = "serde", serde(tag = "pricing"))]
+pub enum PricedBy {
+    Base(ByBase),
+    Funds(ByFunds),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ByBase {
+    pub(crate) quantity: Quantity,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub(crate) filled: Quantity,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ByFunds {
+    pub(crate) funds: Notional,
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub(crate) filled: Notional,
 }

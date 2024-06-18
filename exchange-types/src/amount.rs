@@ -134,24 +134,44 @@ macro_rules! amount {
     )*)
 }
 
-amount! { Amount Notional Price }
+amount! { Notional Price Quantity }
 
-impl Mul<Price> for Amount {
+impl Mul<Quantity> for Price {
+    type Output = Notional;
+
+    #[inline]
+    fn mul(self, quantity: Quantity) -> Self::Output {
+        let price = self;
+        quantity * price
+    }
+}
+
+impl Mul<Price> for Quantity {
     type Output = Notional;
 
     #[inline]
     fn mul(self, price: Price) -> Self::Output {
-        let amount = self;
-        Notional(amount.0 * price.0)
+        let quantity = self;
+        Notional(quantity.0 * price.0)
     }
 }
 
 impl Div<Price> for Notional {
-    type Output = Amount;
+    type Output = Quantity;
 
     #[inline]
     fn div(self, price: Price) -> Self::Output {
         let notional = self;
-        Amount(notional.0 / price.0)
+        Quantity(notional.0 / price.0)
+    }
+}
+
+impl Div<Quantity> for Notional {
+    type Output = Price;
+
+    #[inline]
+    fn div(self, quantity: Quantity) -> Self::Output {
+        let notional = self;
+        Price(notional.0 / quantity.0)
     }
 }

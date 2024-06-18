@@ -1,20 +1,32 @@
 use std::error::Error;
 use std::ops::Add;
+use std::ops::Div;
+use std::ops::Mul;
 use std::ops::Sub;
 
+use either::Either;
 use num::Zero;
 
 pub trait Asset: PartialOrd {
-    /// Order amount.
-    type OrderAmount: Add<Output = Self::OrderAmount>
-        + Sub<Output = Self::OrderAmount>
+    /// Order unique identifier.
+    type OrderId: Copy + Eq + Ord;
+    type OrderNotional: Div<Self::OrderQuantity, Output = Self::OrderPrice>
+        + Div<Self::OrderPrice, Output = Self::OrderQuantity>
+        + Sub<Output = Self::OrderNotional>
         + Copy
         + Ord
         + Zero;
-    /// Order unique identifier.
-    type OrderId: Copy + Eq + Ord;
     /// Order price.
-    type OrderPrice: Copy + Ord;
+    type OrderPrice: Mul<Self::OrderQuantity, Output = Self::OrderNotional>
+        + Copy
+        + Ord;
+    /// Order quantity.
+    type OrderQuantity: Add<Output = Self::OrderQuantity>
+        + Sub<Output = Self::OrderQuantity>
+        + Mul<Self::OrderPrice, Output = Self::OrderNotional>
+        + Copy
+        + Ord
+        + Zero;
     /// Order side.
     type OrderSide: Opposite;
     /// Order current status.
@@ -30,7 +42,7 @@ pub trait Asset: PartialOrd {
     /// Return order limit price.
     fn limit_price(&self) -> Option<Self::OrderPrice>;
     /// Return order remaining amount.
-    fn remaining(&self) -> Self::OrderAmount;
+    fn remaining(&self) -> Either<Self::OrderNotional, Self::OrderQuantity>;
     /// Return current order status.
     fn status(&self) -> Self::OrderStatus;
     /// Returns `true` if order is fill or kill.
