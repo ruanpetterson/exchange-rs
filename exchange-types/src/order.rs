@@ -81,6 +81,7 @@ impl Order {
     ///
     /// Panics if `amount` is greater then `remaining`.
     #[inline]
+    #[track_caller]
     pub(crate) fn fill(&mut self, quantity: Quantity, price: Price) {
         self.try_fill(quantity, price)
             .expect("order does not have available amount to fill")
