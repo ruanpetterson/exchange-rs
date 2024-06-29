@@ -15,7 +15,7 @@ use owo_colors::OwoColorize;
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[clap(author, version, about)]
 struct Args {
     #[clap(short, long, default_value = "BTC/USDC")]
@@ -124,7 +124,10 @@ impl fmt::Display for Input {
 impl From<&str> for Input {
     #[inline]
     fn from(s: &str) -> Self {
-        Input::File(s.to_owned().into())
+        match s {
+            "stdin" | "/dev/stdin" => Input::Stdin,
+            s => Input::File(s.to_owned().into()),
+        }
     }
 }
 
@@ -157,6 +160,9 @@ impl fmt::Display for Output {
 impl From<&str> for Output {
     #[inline]
     fn from(s: &str) -> Self {
-        Output::File(s.to_owned().into())
+        match s {
+            "stdout" | "/dev/stdout" => Output::Stdout,
+            s => Output::File(s.to_owned().into()),
+        }
     }
 }
