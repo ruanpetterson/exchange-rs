@@ -19,7 +19,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[clap(author, version, about)]
 struct Args {
     #[clap(short, long, default_value = "BTC/USDC")]
-    pair: CompactString,
+    symbol: CompactString,
     #[clap(
         short,
         long,
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         Ok(())
     });
 
-    let mut engine = Engine::new(&args.pair);
+    let mut engine = Engine::new(&args.symbol);
 
     let mut i = 0.0f64;
     let begin = Instant::now();

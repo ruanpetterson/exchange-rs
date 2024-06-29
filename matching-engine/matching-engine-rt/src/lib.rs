@@ -7,15 +7,15 @@ use matching_engine_algo::Orderbook;
 use thiserror::Error;
 
 pub struct Engine {
-    pair: CompactString,
+    symbol: CompactString,
     orderbook: Orderbook,
 }
 
 impl Engine {
     #[inline]
-    pub fn new(pair: &str) -> Self {
+    pub fn new(symbol: &str) -> Self {
         Self {
-            pair: CompactString::new_inline(pair),
+            symbol: CompactString::new_inline(symbol),
             orderbook: Orderbook::new(),
         }
     }
@@ -26,11 +26,11 @@ impl Engine {
         incoming_order: OrderRequest,
     ) -> Result<(), EngineError> {
         match incoming_order {
-            OrderRequest::Create { ref pair, .. } => {
-                if pair != &self.pair {
-                    Err(PairError::Mismatch {
-                        expected: self.pair.clone(),
-                        found: pair.clone(),
+            OrderRequest::Create { ref symbol, .. } => {
+                if symbol != &self.symbol {
+                    Err(SymbolError::Mismatch {
+                        expected: self.symbol.clone(),
+                        found: symbol.clone(),
                     })?;
                 }
 
@@ -54,12 +54,12 @@ impl Engine {
 #[derive(Debug, Error)]
 pub enum EngineError {
     #[error(transparent)]
-    PairError(#[from] PairError),
+    SymbolError(#[from] SymbolError),
 }
 
 #[derive(Debug, Error)]
-pub enum PairError {
-    #[error("pair mismatch (expected={}, found={})", .expected, .found)]
+pub enum SymbolError {
+    #[error("symbol mismatch (expected={}, found={})", .expected, .found)]
     Mismatch {
         expected: CompactString,
         found: CompactString,

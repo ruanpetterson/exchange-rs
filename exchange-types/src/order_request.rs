@@ -25,7 +25,7 @@ pub enum OrderRequest {
         account_id: Uuid,
         amount: Quantity,
         order_id: Uuid,
-        pair: CompactString,
+        symbol: CompactString,
         limit_price: Price,
         side: OrderSide,
     },

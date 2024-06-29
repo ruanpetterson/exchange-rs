@@ -88,7 +88,7 @@ fn worker(
             account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
             amount: Decimal::from(rng.gen_range(100..10_000)).into(),
             order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-            pair: CompactString::new_inline("BTC/USDC"),
+            symbol: CompactString::new_inline("BTC/USDC"),
             limit_price: Decimal::from(rng.gen_range(100..10_000)).into(),
             side: match side_distribution.sample(rng) {
                 true => OrderSide::Ask,

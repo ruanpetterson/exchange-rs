@@ -10,7 +10,7 @@ use matching_engine_rt::Engine;
 use rand::Rng;
 use uuid::Uuid;
 
-const PAIR: &'static str = "BENCH";
+const SYMBOL: &'static str = "BENCH";
 
 pub fn in_memory(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
@@ -23,7 +23,7 @@ pub fn in_memory(c: &mut Criterion) {
             account_id: Uuid::new_v4(),
             amount: rng.gen_range(100..10_000).into(),
             order_id: Uuid::new_v4(),
-            pair: CompactString::new_inline(PAIR),
+            symbol: CompactString::new_inline(SYMBOL),
             limit_price: rng.gen_range(100..10_000).into(),
             side: match rng.gen_range(0..2) {
                 0 => OrderSide::Ask,
@@ -34,7 +34,7 @@ pub fn in_memory(c: &mut Criterion) {
 
     c.bench_function("process", |b| {
         b.iter_batched(
-            || Engine::new(PAIR),
+            || Engine::new(SYMBOL),
             |mut engine| {
                 let incoming_order = black_box(orders.next().unwrap());
                 black_box(engine.process(incoming_order))
