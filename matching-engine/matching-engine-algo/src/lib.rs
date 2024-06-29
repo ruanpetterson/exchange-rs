@@ -24,7 +24,7 @@ impl<O> Algo<O> for MatchingAlgo {
     ) -> Result<(), DefaultExchangeError>
     where
         E: Exchange + ExchangeExt,
-        <E as Exchange>::Order: Trade<O> + TryFrom<O>,
+        <E as Exchange>::Order: Trade<O>,
         O: Asset<
             OrderId = <<E as Exchange>::Order as Asset>::OrderId,
             OrderNotional = <<E as Exchange>::Order as Asset>::OrderNotional,
@@ -33,6 +33,7 @@ impl<O> Algo<O> for MatchingAlgo {
             OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
             OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
         >,
+        O: TryInto<<E as Exchange>::Order>,
     {
         policy::before_policies()
             .iter()

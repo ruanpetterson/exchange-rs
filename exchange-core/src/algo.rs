@@ -19,7 +19,7 @@ pub trait Algo<O> {
     ) -> Result<Self::Output, Self::Error>
     where
         E: Exchange + ExchangeExt,
-        <E as Exchange>::Order: Trade<O> + TryFrom<O>,
+        <E as Exchange>::Order: Trade<O>,
         O: Asset<
             OrderId = <<E as Exchange>::Order as Asset>::OrderId,
             OrderNotional = <<E as Exchange>::Order as Asset>::OrderNotional,
@@ -27,5 +27,6 @@ pub trait Algo<O> {
             OrderQuantity = <<E as Exchange>::Order as Asset>::OrderQuantity,
             OrderSide = <<E as Exchange>::Order as Asset>::OrderSide,
             OrderStatus = <<E as Exchange>::Order as Asset>::OrderStatus,
-        >;
+        >,
+        O: TryInto<<E as Exchange>::Order>;
 }
