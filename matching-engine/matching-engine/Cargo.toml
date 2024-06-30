@@ -15,10 +15,11 @@ anyhow = { workspace = true }
 arrayvec = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 compact_str = { workspace = true, features = ["serde"] }
-crossbeam = { workspace = true, features = ["crossbeam-channel"] }
+crossbeam-channel = "0.5.13"
 mimalloc = { workspace = true }
 num_cpus = { workspace = true }
 owo-colors = { workspace = true }
+parking_lot = "0.12.3"
 rand = { workspace = true }
 rust_decimal = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

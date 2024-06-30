@@ -2,14 +2,13 @@ use std::io;
 use std::io::BufWriter;
 use std::io::Result;
 use std::io::Write;
-use std::mem;
 use std::sync::OnceLock;
 use std::thread;
 
 use arrayvec::ArrayVec;
 use clap::Parser;
 use compact_str::CompactString;
-use crossbeam::channel::Sender;
+use crossbeam_channel::Sender;
 use exchange_types::OrderRequest;
 use exchange_types::OrderSide;
 use rand::distributions::Bernoulli;
@@ -34,16 +33,15 @@ fn main() -> Result<()> {
         workers,
     } = Args::parse();
 
-    let (tx, rx) = crossbeam::channel::bounded::<Message>(1024 * 4);
+    let (tx, rx) = crossbeam_channel::bounded::<Message>(1024 * 4);
 
     let workers = 1.max(workers - 1);
     for jobs_per_worker in fair_division(jobs, workers) {
         let tx = tx.clone();
         thread::spawn(move || {
             let mut rng = rand::thread_rng();
-            let mut buf = BufWriter::new(ArrayVec::new_const());
             for _ in 0..jobs_per_worker {
-                worker(&mut buf, &tx, &mut rng);
+                worker(&tx, &mut rng);
             }
         });
     }
@@ -69,11 +67,9 @@ thread_local! {
 }
 
 #[inline(always)]
-fn worker(
-    buf: &mut BufWriter<Message>,
-    tx: &Sender<Message>,
-    rng: &mut rand::rngs::ThreadRng,
-) {
+fn worker(tx: &Sender<Message>, rng: &mut rand::rngs::ThreadRng) {
+    let mut buf = Message::new_const();
+
     let side_distribution = SIDE_DISTRIBUTION.with(|side_dist| {
         *side_dist.get_or_init(move || unsafe {
             Bernoulli::from_ratio(1, 2).unwrap_unchecked()
@@ -97,15 +93,14 @@ fn worker(
         },
     };
 
-    let Ok(_) = serde_json::to_writer(&mut *buf, &order) else {
+    let Ok(_) = serde_json::to_writer(&mut buf, &order) else {
         return;
     };
 
     buf.write_all(b"\n").unwrap();
     buf.flush().unwrap();
 
-    tx.send(mem::replace(buf.get_mut(), Message::new_const()))
-        .unwrap();
+    tx.send(buf).unwrap();
 }
 
 #[inline(always)]
