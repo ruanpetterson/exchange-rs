@@ -3,14 +3,17 @@ use std::fs;
 use std::io;
 use std::io::BufRead;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
 use anyhow::Result;
 use clap::Parser;
 use compact_str::CompactString;
 use exchange_core::ExchangeExt;
+use exchange_types::OrderRequest;
 use matching_engine_rt::Engine;
 use owo_colors::OwoColorize;
+use parking_lot::Mutex;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -34,30 +37,27 @@ struct Args {
         help = "Orderbook events destination"
     )]
     output: Output,
+    #[clap(short = 'j', long = "jobs", default_value_t = num_cpus::get())]
+    workers: usize,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let (tx, rx) = crossbeam::channel::bounded(128 * 1024);
+    let (tx, rx) = crossbeam_channel::bounded(128 * 1024);
 
-    std::thread::spawn(move || -> Result<()> {
-        let mut reader = io::BufReader::new(args.input);
-        let mut buf = String::with_capacity(1024);
-        while reader.read_line(&mut buf).is_ok() {
-            let order = serde_json::from_str(&buf);
-            match order {
-                Ok(order) => tx.send(order)?,
-                Err(error) if error.is_eof() => break,
-                Err(error) => {
-                    eprintln!("{error}");
-                }
-            }
-            buf.clear();
-        }
+    let reader = Arc::new(Mutex::new(io::BufReader::with_capacity(
+        1024 * 32,
+        args.input,
+    )));
 
-        Ok(())
-    });
+    for _ in 0..1.max(args.workers - 1) {
+        let reader = Arc::clone(&reader);
+        let tx = tx.clone();
+        std::thread::spawn(|| worker(reader, tx));
+    }
+
+    drop(tx);
 
     let mut engine = Engine::new(&args.symbol);
 
@@ -165,4 +165,25 @@ impl From<&str> for Output {
             s => Output::File(s.to_owned().into()),
         }
     }
+}
+
+#[inline(never)]
+fn worker(
+    reader: Arc<Mutex<io::BufReader<Input>>>,
+    tx: crossbeam_channel::Sender<OrderRequest>,
+) -> Result<()> {
+    let mut buf = String::with_capacity(512);
+    while reader.lock().read_line(&mut buf).is_ok() {
+        let order = serde_json::from_str(&buf);
+        match order {
+            Ok(order) => tx.send(order)?,
+            Err(error) if error.is_eof() => break,
+            Err(error) => {
+                eprintln!("{error}");
+            }
+        }
+        buf.clear();
+    }
+
+    Ok(())
 }
