@@ -14,7 +14,7 @@ macro_rules! forward_binop {
 
             #[inline]
             fn $method(self, other: $res) -> $res {
-                (&self.0).$method(&other.0).into()
+                (&self.0).$method(other.0).into()
             }
         }
 
@@ -24,7 +24,7 @@ macro_rules! forward_binop {
 
             #[inline]
             fn $method(self, other: $res) -> $res {
-                (&self.0).$method(&other.0).into()
+                (&self.0).$method(other.0).into()
             }
         }
 
@@ -34,7 +34,7 @@ macro_rules! forward_binop {
 
             #[inline]
             fn $method(self, other: &'b $res) -> $res {
-                (&self.0).$method(&other.0).into()
+                (&self.0).$method(other.0).into()
             }
         }
 
@@ -44,7 +44,7 @@ macro_rules! forward_binop {
 
             #[inline]
             fn $method(self, other: &'b $res) -> $res {
-                (&self.0).$method(&other.0).into()
+                (&self.0).$method(other.0).into()
             }
         }
     };
@@ -56,7 +56,7 @@ macro_rules! forward_binop_assign {
         impl $imp<$res> for $res {
             #[inline]
             fn $method(&mut self, other: $res) {
-                self.0.$method(&other.0)
+                self.0.$method(other.0)
             }
         }
 
@@ -64,7 +64,7 @@ macro_rules! forward_binop_assign {
         impl<'a> $imp<&'a $res> for $res {
             #[inline]
             fn $method(&mut self, other: &'a $res) {
-                self.0.$method(&other.0)
+                self.0.$method(other.0)
             }
         }
     };
