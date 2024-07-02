@@ -47,7 +47,9 @@ pub trait Exchange {
     /// Removes an order from the exchange.
     fn remove(
         &mut self,
-        order: &<Self::Order as Asset>::OrderId,
+        side: &<Self::Order as Asset>::OrderSide,
+        level: &<Self::Order as Asset>::OrderPrice,
+        order_id: &<Self::Order as Asset>::OrderId,
     ) -> Option<Self::Order>;
 
     /// Returns a reference of the most relevant order in the exchange.

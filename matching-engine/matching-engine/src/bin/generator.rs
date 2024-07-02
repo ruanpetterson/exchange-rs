@@ -76,20 +76,15 @@ fn worker(tx: &Sender<Message>, rng: &mut rand::rngs::ThreadRng) {
         })
     });
 
-    let order = match rng.gen_range(0..1_000) {
-        0 => OrderRequest::Delete {
-            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-        },
-        _ => OrderRequest::Create {
-            account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-            amount: Decimal::from(rng.gen_range(100..10_000)).into(),
-            order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
-            symbol: CompactString::new_inline("BTC/USDC"),
-            limit_price: Decimal::from(rng.gen_range(100..10_000)).into(),
-            side: match side_distribution.sample(rng) {
-                true => OrderSide::Ask,
-                false => OrderSide::Bid,
-            },
+    let order = OrderRequest::Create {
+        account_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+        amount: Decimal::from(rng.gen_range(100..10_000)).into(),
+        order_id: Uuid::from_bytes(rng.gen::<[u8; 16]>()),
+        symbol: CompactString::new_inline("BTC/USDC"),
+        limit_price: Decimal::from(rng.gen_range(100..10_000)).into(),
+        side: match side_distribution.sample(rng) {
+            true => OrderSide::Ask,
+            false => OrderSide::Bid,
         },
     };
 

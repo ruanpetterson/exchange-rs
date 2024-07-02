@@ -6,7 +6,10 @@ use std::ops::DerefMut;
 use exchange_core::Asset;
 
 pub struct OrdersByPrice<Order: Asset>(
-    BTreeMap<<Order as Asset>::OrderPrice, VecDeque<<Order as Asset>::OrderId>>,
+    BTreeMap<
+        <Order as Asset>::OrderPrice,
+        VecDeque<(usize, <Order as Asset>::OrderId)>,
+    >,
 );
 
 impl<Order: Asset> Default for OrdersByPrice<Order> {
@@ -19,7 +22,7 @@ impl<Order: Asset> Default for OrdersByPrice<Order> {
 impl<Order: Asset> Deref for OrdersByPrice<Order> {
     type Target = BTreeMap<
         <Order as Asset>::OrderPrice,
-        VecDeque<<Order as Asset>::OrderId>,
+        VecDeque<(usize, <Order as Asset>::OrderId)>,
     >;
 
     #[inline]
