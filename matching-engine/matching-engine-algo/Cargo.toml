@@ -12,6 +12,7 @@ exchange-types = { path = "../../exchange-types" }
 
 either = { workspace = true }
 num = { workspace = true }
+slab = "0.4.9"
 thiserror = { workspace = true }
 
 [dev-dependencies]

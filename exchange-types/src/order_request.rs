@@ -30,6 +30,8 @@ pub enum OrderRequest {
         side: OrderSide,
     },
     Delete {
+        side: OrderSide,
+        limit_price: Price,
         order_id: Uuid,
     },
 }

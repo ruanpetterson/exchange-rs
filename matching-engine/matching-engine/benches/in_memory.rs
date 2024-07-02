@@ -16,9 +16,10 @@ pub fn in_memory(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
 
     let mut orders = (1..).map(|_| match rng.gen_range(0..1_000) {
-        0 => OrderRequest::Delete {
-            order_id: Uuid::new_v4(),
-        },
+        // TODO: reimplement delete generator.
+        // 0 => OrderRequest::Delete {
+        //     order_id: Uuid::new_v4(),
+        // },
         _ => OrderRequest::Create {
             account_id: Uuid::new_v4(),
             amount: rng.gen_range(100..10_000).into(),

@@ -36,8 +36,16 @@ impl Engine {
                 let order = Order::try_from(incoming_order).unwrap();
                 let _ = self.orderbook.matching(order);
             }
-            OrderRequest::Delete { order_id } => {
-                self.orderbook.remove(&OrderId::new(order_id));
+            OrderRequest::Delete {
+                side,
+                limit_price,
+                order_id,
+            } => {
+                self.orderbook.remove(
+                    &side,
+                    &limit_price,
+                    &OrderId::new(order_id),
+                );
             }
         };
 

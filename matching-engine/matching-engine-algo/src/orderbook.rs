@@ -48,17 +48,22 @@ impl Exchange for Orderbook {
         &self,
         side: &<Self::Order as Asset>::OrderSide,
     ) -> impl Iterator<Item = Self::OrderRef<'_>> + '_ {
-        let order_id_to_order =
-            |order_id: &<LimitOrder as Asset>::OrderId| -> Self::OrderRef<'_> {
-                self.orders_by_id
-                    .get(order_id)
-                    .expect("every order in tree must also be in index")
-            };
+        let order_id_to_order = |(index, _)| -> Self::OrderRef<'_> {
+            self.orders_by_id
+                .get(index)
+                .expect("every order in tree must also be in index")
+        };
 
-        self.orders_by_side.iter(side).map(order_id_to_order)
+        self.orders_by_side
+            .iter(side)
+            .copied()
+            .map(order_id_to_order)
     }
 
     unsafe fn insert(&mut self, order: Self::Order) {
+        let order_id = order.id();
+        let index = self.orders_by_id.insert(order);
+
         self.orders_by_side[order.side()]
             .entry(
                 order
@@ -66,66 +71,48 @@ impl Exchange for Orderbook {
                     .expect("bookable orders must have a limit price"),
             )
             .or_insert_with(|| VecDeque::with_capacity(8))
-            .push_back(order.id());
-
-        self.orders_by_id.insert(order.id(), order);
+            .push_back((index, order_id));
     }
 
     fn remove(
         &mut self,
-        order_id: &<Self::Order as Asset>::OrderId,
+        side: &<Self::Order as Asset>::OrderSide,
+        &level: &<Self::Order as Asset>::OrderPrice,
+        &order_id: &<Self::Order as Asset>::OrderId,
     ) -> Option<Self::Order> {
-        let order = self.orders_by_id.remove(order_id)?;
-
-        assert!(
-            &order.id() == order_id,
-            "order id must be the same; something is wrong otherwise"
-        );
-
-        let limit_price = order
-            .limit_price()
-            .expect("bookable orders must have a limit price");
-
-        let Entry::Occupied(mut level) =
-            self.orders_by_side[order.side()].entry(limit_price)
+        let Entry::Occupied(mut level) = self.orders_by_side[side].entry(level)
         else {
-            unreachable!("orders that lives in index must also be in the tree");
+            return None;
         };
 
-        // This prevents dangling levels (level with no orders).
-        let order_id = if level.get().len() == 1 {
-            level.remove().pop_front()
-        } else {
-            level
-                .get()
-                .iter()
-                .position(|&order_id| order.id() == order_id)
-                .and_then(|index| level.get_mut().remove(index))
+        let (index, _order_id) = level
+            .get()
+            .iter()
+            .position(|&(_index, id)| id == order_id)
+            .and_then(|index| level.get_mut().remove(index))
+            .expect("indexed orders must be in the book tree");
+
+        if level.get().is_empty() {
+            level.remove();
         }
-        .expect("indexed orders must be in the book tree");
 
-        assert!(
-            order.id() == order_id,
-            "order id must be the same; something is wrong otherwise"
-        );
-
-        order.into()
+        self.orders_by_id[index].into()
     }
 
     fn peek(&self, side: &OrderSide) -> Option<Self::OrderRef<'_>> {
-        let order_id = self.orders_by_side.peek(side)?;
+        let &(index, _order_id) = self.orders_by_side.peek(side)?;
 
         self.orders_by_id
-            .get(order_id)
+            .get(index)
             .expect("every order that lives in tree must also be in the index")
             .into()
     }
 
     fn peek_mut(&mut self, side: &OrderSide) -> Option<Self::OrderRefMut<'_>> {
-        let order_id = self.orders_by_side.peek(side)?;
+        let &(index, _order_id) = self.orders_by_side.peek(side)?;
 
         self.orders_by_id
-            .get_mut(order_id)
+            .get_mut(index)
             .expect("every order that lives in tree must also be in the index")
             .into()
     }
@@ -136,25 +123,14 @@ impl Exchange for Orderbook {
             side @ OrderSide::Bid => self.orders_by_side[side].last_entry(),
         }?;
 
-        let order_id = if level.get().len() == 1 {
-            // This prevents dangling levels (level with no orders).
+        let (index, _order_id) = if level.get().len() == 1 {
             level.remove().pop_front()
         } else {
             level.get_mut().pop_front()
         }
         .expect("level should always have an order");
 
-        let order = self
-            .orders_by_id
-            .remove(&order_id)
-            .expect("every order that lives in tree must also be in the index");
-
-        assert!(
-            order.id() == order_id,
-            "order id must be the same; something is wrong otherwise"
-        );
-
-        order.into()
+        self.orders_by_id.remove(index).into()
     }
 }
 

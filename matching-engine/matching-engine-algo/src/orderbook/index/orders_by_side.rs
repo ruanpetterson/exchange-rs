@@ -23,7 +23,7 @@ where
     pub fn iter(
         &self,
         side: &<Order as Asset>::OrderSide,
-    ) -> impl Iterator<Item = &<Order as Asset>::OrderId> {
+    ) -> impl Iterator<Item = &(usize, <Order as Asset>::OrderId)> {
         match side {
             OrderSide::Ask => Either::Left(
                 self[side].deref().values().flat_map(VecDeque::iter),
@@ -38,7 +38,7 @@ where
     pub fn peek(
         &self,
         side: &<Order as Asset>::OrderSide,
-    ) -> Option<&<Order as Asset>::OrderId> {
+    ) -> Option<&(usize, <Order as Asset>::OrderId)> {
         self.iter(side).next()
     }
 }

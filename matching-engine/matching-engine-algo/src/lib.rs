@@ -53,7 +53,11 @@ impl<O> Algo<O> for MatchingAlgo {
             };
 
             if top_order.is_closed() {
-                let top_order_id = top_order.id();
+                let (top_order_side, top_order_limit_price, top_order_id) = (
+                    top_order.side(),
+                    top_order.limit_price().unwrap(),
+                    top_order.id(),
+                );
 
                 // We must explicity drop to reuse the `exchange`.
                 drop(top_order);
@@ -61,7 +65,11 @@ impl<O> Algo<O> for MatchingAlgo {
                 // As long as top order is completed, it can be safely removed
                 // from orderbook.
                 exchange
-                    .remove(&top_order_id)
+                    .remove(
+                        &top_order_side,
+                        &top_order_limit_price,
+                        &top_order_id,
+                    )
                     .expect("order should be `Some`");
             }
         }
