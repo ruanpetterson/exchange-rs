@@ -175,7 +175,7 @@ fn worker(
     let mut buf = ArrayVec::<u8, 512>::new_const();
 
     while read_until(&mut *reader.lock(), b'\n', &mut buf).is_ok() {
-        let order = serde_json::from_slice(&*buf);
+        let order = serde_json::from_slice(&buf);
         match order {
             Ok(order) => tx.send(order)?,
             Err(error) if error.is_eof() => break,
