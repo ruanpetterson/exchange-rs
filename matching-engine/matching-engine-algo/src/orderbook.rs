@@ -58,7 +58,6 @@ impl Exchange for Orderbook {
         self.orders_by_side.iter(side).map(order_id_to_order)
     }
 
-    #[inline]
     unsafe fn insert(&mut self, order: Self::Order) {
         self.orders_by_side[order.side()]
             .entry(
@@ -72,7 +71,6 @@ impl Exchange for Orderbook {
         self.orders_by_id.insert(order.id(), order);
     }
 
-    #[inline]
     fn remove(
         &mut self,
         order_id: &<Self::Order as Asset>::OrderId,
@@ -114,7 +112,6 @@ impl Exchange for Orderbook {
         order.into()
     }
 
-    #[inline]
     fn peek(&self, side: &OrderSide) -> Option<Self::OrderRef<'_>> {
         let order_id = self.orders_by_side.peek(side)?;
 
@@ -124,7 +121,6 @@ impl Exchange for Orderbook {
             .into()
     }
 
-    #[inline]
     fn peek_mut(&mut self, side: &OrderSide) -> Option<Self::OrderRefMut<'_>> {
         let order_id = self.orders_by_side.peek(side)?;
 
@@ -134,7 +130,6 @@ impl Exchange for Orderbook {
             .into()
     }
 
-    #[inline]
     fn pop(&mut self, side: &OrderSide) -> Option<Self::Order> {
         let mut level = match side {
             side @ OrderSide::Ask => self.orders_by_side[side].first_entry(),

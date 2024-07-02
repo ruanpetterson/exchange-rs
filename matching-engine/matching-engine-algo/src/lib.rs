@@ -17,7 +17,6 @@ impl<O> Algo<O> for MatchingAlgo {
     type Error = DefaultExchangeError;
     type Output = ();
 
-    #[inline]
     fn matching<E>(
         exchange: &mut E,
         mut incoming_order: O,

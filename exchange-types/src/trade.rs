@@ -26,7 +26,6 @@ pub struct Trade {
 
 impl Trade {
     /// Constructs a new `Trade`, returning an error if something fails.
-    #[inline]
     #[track_caller]
     pub fn try_new(
         maker: &mut LimitOrder,

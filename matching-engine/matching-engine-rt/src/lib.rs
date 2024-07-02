@@ -20,7 +20,6 @@ impl Engine {
         }
     }
 
-    #[inline]
     pub fn process(
         &mut self,
         incoming_order: OrderRequest,
