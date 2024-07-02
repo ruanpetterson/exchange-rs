@@ -16,6 +16,7 @@ arrayvec = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 compact_str = { workspace = true, features = ["serde"] }
 crossbeam-channel = "0.5.13"
+memchr = "2.7.4"
 mimalloc = { workspace = true }
 num_cpus = { workspace = true }
 owo-colors = { workspace = true }

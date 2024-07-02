@@ -1,12 +1,12 @@
 use std::fmt;
 use std::fs;
 use std::io;
-use std::io::BufRead;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
 use anyhow::Result;
+use arrayvec::ArrayVec;
 use clap::Parser;
 use compact_str::CompactString;
 use exchange_core::ExchangeExt;
@@ -172,9 +172,10 @@ fn worker(
     reader: Arc<Mutex<io::BufReader<Input>>>,
     tx: crossbeam_channel::Sender<OrderRequest>,
 ) -> Result<()> {
-    let mut buf = String::with_capacity(512);
-    while reader.lock().read_line(&mut buf).is_ok() {
-        let order = serde_json::from_str(&buf);
+    let mut buf = ArrayVec::<u8, 512>::new_const();
+
+    while read_until(&mut *reader.lock(), b'\n', &mut buf).is_ok() {
+        let order = serde_json::from_slice(&*buf);
         match order {
             Ok(order) => tx.send(order)?,
             Err(error) if error.is_eof() => break,
@@ -186,4 +187,40 @@ fn worker(
     }
 
     Ok(())
+}
+
+/// An [`std::io::BufRead::read_until`] generic over `W` where `W` implements
+/// [`std::io::Write`].
+fn read_until<R: io::BufRead + ?Sized, W: io::Write>(
+    r: &mut R,
+    delim: u8,
+    mut buf: W,
+) -> io::Result<usize> {
+    let mut read = 0;
+    loop {
+        let (done, used) = {
+            let available = match r.fill_buf() {
+                Ok(n) => n,
+                Err(ref e) if e.kind() == io::ErrorKind::Interrupted => {
+                    continue
+                }
+                Err(e) => return Err(e),
+            };
+            match memchr::memchr(delim, available) {
+                Some(i) => {
+                    buf.write_all(&available[..=i])?;
+                    (true, i + 1)
+                }
+                None => {
+                    buf.write_all(available)?;
+                    (false, available.len())
+                }
+            }
+        };
+        r.consume(used);
+        read += used;
+        if done || used == 0 {
+            return Ok(read);
+        }
+    }
 }

@@ -17,7 +17,7 @@ use rand::Rng;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-type Message = ArrayVec<u8, 256>;
+type Message = ArrayVec<u8, 512>;
 
 #[derive(Parser)]
 struct Args {
